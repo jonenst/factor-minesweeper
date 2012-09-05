@@ -1,10 +1,11 @@
 ! Copyright (C) 2012 Jon Harper.
 ! See http://factorcode.org/license.txt for BSD license.
-USING: accessors colors combinators io.pathnames kernel locals
-math math.parser models models.arrow.smart sequences ui
-ui.gadgets ui.gadgets.buttons ui.gadgets.buttons.private
-ui.gadgets.labels ui.gadgets.packs ui.gestures ui.images
-ui.pens ui.pens.image ui.pens.solid ui.render ;
+USING: accessors colors combinators grouping io.pathnames
+kernel locals math math.parser models models.arrow.smart
+sequences ui ui.gadgets ui.gadgets.buttons
+ui.gadgets.buttons.private ui.gadgets.labels ui.gadgets.packs
+ui.gestures ui.images ui.pens ui.pens.image ui.pens.solid
+ui.render ;
 IN: minesweeper
 
 TUPLE: minecell mined? selected guess ;
@@ -45,10 +46,21 @@ TUPLE: minecell-gadget < checkbox minecell ;
   { T{ button-up f f 3 } [ minecell-rightclicked ] }
 } set-gestures
 
+TUPLE: grid n m cells ;
+
+: <example-grid> ( -- grid )
+  \ grid new 3 >>n 3 >>m
+  9 [ f <minecell> ] replicate >>cells ;
+: add-row ( pile cells -- pile )
+  <shelf> [ <minecell-gadget> add-gadget ] reduce add-gadget ;
+: add-rows ( cells -- gadget )
+  <pile> [ add-row  ] reduce ;
+
+: <minesweeper-gadget> ( grid -- gadget )
+  [ m>> ] [ cells>> ] bi swap group add-rows ;
+
 : minesweeper-main ( -- )
-  t <minecell> <minecell-gadget>
-  f <minecell> <minecell-gadget> 
-  <shelf> swap add-gadget swap add-gadget
+  <example-grid> <minesweeper-gadget>
   "minesweeper" open-window ;
 
 MAIN: minesweeper-main
