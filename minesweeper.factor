@@ -2,15 +2,16 @@
 ! See http://factorcode.org/license.txt for BSD license.
 USING: accessors colors io.pathnames kernel models
 models.arrow.smart sequences ui ui.gadgets ui.gadgets.buttons
-ui.gadgets.labels ui.gadgets.packs ui.gestures ui.images
-ui.pens ui.pens.image ui.pens.solid ui.render ;
+ui.gadgets.buttons.private ui.gadgets.labels ui.gadgets.packs
+ui.gestures ui.images ui.pens ui.pens.image ui.pens.solid
+ui.render ;
 IN: minesweeper
 
 TUPLE: minecell mined? selected guess ;
-: <minecell> ( mined? -- minecell ) f <model> "" <model> \ minecell boa ;
+: <minecell> ( mined? -- minecell ) f <model> f <model> \ minecell boa ;
 
 : minecell-label ( selected guess mined? -- str )
-  [ nip "X" "" ? ] [ drop ] bi-curry bi-curry if ;
+  [ nip "X" "1" ? ] [ drop "!" "" ? ] bi-curry bi-curry if ;
 : <minecell-label> ( minecell -- label )
   [ selected>> ] [ guess>> ] [ mined?>> <model> ] tri 
   [ minecell-label ] <smart-arrow> <label-control> ;
@@ -19,7 +20,7 @@ TUPLE: minecell-gadget < checkbox minecell ;
 : minecell-leftclicked ( gadget -- )
   minecell>> selected>> t swap set-model ;
 : minecell-rightclicked ( gadget -- )
-  minecell>> guess>> "!" swap set-model ;
+  minecell>> guess>> toggle-model ;
 
 : minesweeper-image-pen ( string -- path )
   "vocab:minesweeper/" prepend-path ".png" append <image-name> <image-pen> ;
