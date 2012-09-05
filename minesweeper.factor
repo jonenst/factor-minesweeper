@@ -1,19 +1,24 @@
 ! Copyright (C) 2012 Jon Harper.
 ! See http://factorcode.org/license.txt for BSD license.
-USING: accessors colors io.pathnames kernel models
-models.arrow.smart sequences ui ui.gadgets ui.gadgets.buttons
-ui.gadgets.buttons.private ui.gadgets.labels ui.gadgets.packs
-ui.gestures ui.images ui.pens ui.pens.image ui.pens.solid
-ui.render ;
+USING: accessors colors combinators io.pathnames kernel locals
+math math.parser models models.arrow.smart sequences ui
+ui.gadgets ui.gadgets.buttons ui.gadgets.buttons.private
+ui.gadgets.labels ui.gadgets.packs ui.gestures ui.images
+ui.pens ui.pens.image ui.pens.solid ui.render ;
 IN: minesweeper
 
 TUPLE: minecell mined? selected guess ;
 : <minecell> ( mined? -- minecell ) f <model> f <model> \ minecell boa ;
 
-: minecell-label ( selected guess mined? -- str )
-  [ nip "X" "1" ? ] [ drop "!" "" ? ] bi-curry bi-curry if ;
+: neighbours-string ( n -- string )
+   [ "" ] [ number>string ] if-zero ;
+:: minecell-label ( selected guess mined? neighbours -- str )
+  selected [ mined? "X" neighbours neighbours-string ? ]
+  [ guess "!" "" ? ] if ;
 : <minecell-label> ( minecell -- label )
-  [ selected>> ] [ guess>> ] [ mined?>> <model> ] tri 
+  { [ selected>> ] [ guess>> ]
+    [ mined?>> <model> ] [ drop 1 <model> ]
+  } cleave
   [ minecell-label ] <smart-arrow> <label-control> ;
 
 TUPLE: minecell-gadget < checkbox minecell ;
