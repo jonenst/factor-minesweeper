@@ -37,7 +37,23 @@ CONSTANT: empty-grid $[ { 3 3 } <empty-grid> ]
 >>
 CONSTANT: test-grid $[ (test-grid) ]
 
-{ $[ 
-  3 3 zero-matrix [ 2drop 1 ] mmap-index 
+{ $[
+  3 3 zero-matrix [ 2drop 1 ] mmap-index
   [ [ 0 { 1 1 } ] dip Mi,j! ] keep
 ] } [ test-grid cells>> [ drop neighbour-mines ] mmap-index ] unit-test
+
+{ $[
+  3 3 zero-matrix [ 2drop f ] mmap-index [
+    [ t { 0 0 } ] dip Mi,j!
+  ] keep
+] } [ (test-grid) cells>> [ { 0 0 } swap Mi,j demine-cell ] [ [ drop selected>> value>> ] mmap-index ] bi ] unit-test
+
+{ $[
+  3 3 zero-matrix [ 2drop f ] mmap-index [
+    [ t { 1 1 } ] dip Mi,j!
+  ] keep
+] } [ (test-grid) cells>> [ { 1 1 } swap Mi,j demine-cell ] [ [ drop selected>> value>> ] mmap-index ] bi ] unit-test
+
+{ $[
+  3 3 zero-matrix [ 2drop t ] mmap-index
+] } [ { 3 3 } <empty-grid> cells>> [ { 0 0 } swap Mi,j demine-cell ] [ [ drop selected>> value>> ] mmap-index ] bi ] unit-test

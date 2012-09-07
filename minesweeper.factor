@@ -14,7 +14,7 @@ IN: minesweeper
   [ guess "!" "" ? ] if ;
 : <minecell-label> ( minecell -- label )
   { [ selected>> ] [ guess>> ]
-    [ mined?>> <model> ] [ drop 1 <model> ]
+    [ mined?>> <model> ] [ neighbour-mines <model> ]
   } cleave
   [ minecell-label ] <smart-arrow> <label-control> ;
 
@@ -29,12 +29,12 @@ TUPLE: minecell-gadget < checkbox minecell ;
 : minecell-theme ( gadget -- gadget )
   "cell-plain" minesweeper-image-pen dup
   "cell-pressed" minesweeper-image-pen dup dup <button-pen> >>interior
-  dup dup interior>> pen-pref-dim >>min-dim { 10 0 } >>size  ; 
+  dup dup interior>> pen-pref-dim >>min-dim { 10 0 } >>size ;
 
 : <minecell-gadget> ( minecell -- gadget )
   [ ] [ selected>> ] [ <minecell-label> ] tri
   [ minecell-leftclicked ] minecell-gadget new-button
-  swap >>model swap >>minecell 
+  swap >>model swap >>minecell
   minecell-theme ;
 
 \ minecell-gadget {

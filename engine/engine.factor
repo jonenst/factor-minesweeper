@@ -30,6 +30,19 @@ TUPLE: grid dim cells ;
   [ dim>> neighbours ] [ nip cells>> ] 2bi
   Mi,js [ mined?>> ] filter length ;
 
+DEFER: demine-cell
+: ?demine-neighbours ( minecell -- )
+  dup [ neighbour-mines zero? ] [ mined?>> not ] bi and [
+    [ [ idx>> ] [ grid>> dim>> ] bi neighbours ] [ grid>> cells>> ] bi [
+      Mi,j demine-cell
+    ] curry each
+  ] [ drop ] if ;
+: demine-cell ( minecell -- )
+  dup selected>> value>> [ drop ] [
+    [ selected>> t swap set-model ]
+    [ ?demine-neighbours ] bi
+  ] if ;
+
 : <minecell> ( idx mined? grid -- minecell )
   [ f <model> f <model> ] 3dip \ minecell boa ;
 
