@@ -1,13 +1,26 @@
 ! Copyright (C) 2012 Jon Harper.
 ! See http://factorcode.org/license.txt for BSD license.
-USING: accessors combinators grouping io.pathnames kernel
-locals math math.parser minesweeper.engine models
-models.arrow.smart sequences ui ui.gadgets ui.gadgets.buttons
-ui.gadgets.buttons.private ui.gadgets.editors
-ui.gadgets.labeled ui.gadgets.labels ui.gadgets.packs
-ui.gadgets.worlds ui.gestures ui.images ui.pens ui.pens.image ;
+USING: accessors colors.constants combinators fonts grouping
+gtk.ffi io.pathnames kernel locals math math.order math.parser
+minesweeper.engine models models.arrow.smart sequences ui
+ui.gadgets ui.gadgets.buttons ui.gadgets.buttons.private
+ui.gadgets.editors ui.gadgets.labeled ui.gadgets.labels
+ui.gadgets.packs ui.gadgets.worlds ui.gestures ui.images
+ui.pens ui.pens.image ;
 IN: minesweeper
 
+CONSTANT: number-colors {
+  COLOR: blue
+  COLOR: DarkGreen
+  COLOR: red
+}
+
+: minesweeper-label-theme ( n label -- label )
+  [
+    [ 1 - 0 2 clamp number-colors nth ] [ swap font-with-foreground ] bi*
+    T{ rgba f 1 0 0 0 } font-with-background
+    t >>bold?
+  ] with change-font ;
 : neighbours-string ( n -- string )
    [ "" ] [ number>string ] if-zero ;
 :: minecell-label ( selected guess mined? neighbours -- str )
@@ -17,7 +30,8 @@ IN: minesweeper
   { [ selected>> ] [ guess>> ]
     [ mined?>> <model> ] [ neighbour-mines <model> ]
   } cleave
-  [ minecell-label ] <smart-arrow> <label-control> ;
+  [ [ minecell-label ] <smart-arrow> <label-control> ]
+  [ value>> swap minesweeper-label-theme ] bi ;
 
 TUPLE: minecell-gadget < checkbox minecell ;
 : check-end ( grid -- )
