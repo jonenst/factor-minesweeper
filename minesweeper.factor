@@ -20,7 +20,7 @@ IN: minesweeper
 
 TUPLE: minecell-gadget < checkbox minecell ;
 : minecell-leftclicked ( gadget -- )
-  minecell>> selected>> t swap set-model ;
+  minecell>> demine-cell ;
 : minecell-rightclicked ( gadget -- )
   minecell>> guess>> toggle-model ;
 
@@ -48,10 +48,12 @@ TUPLE: minecell-gadget < checkbox minecell ;
   <pile> [ add-row  ] reduce ;
 
 : <minesweeper-gadget> ( grid -- gadget )
-  [ m>> ] [ cells>> ] bi swap group add-rows ;
+  cells>> add-rows ;
 
 : minesweeper-main ( -- )
-  { 3 3 } <empty-grid> <minesweeper-gadget>
+  { 3 3 } <empty-grid> [
+    [ [ { 1 1 } t ] dip <minecell> { 1 1 } ] [ cells>> ] bi Mi,j!
+  ] keep <minesweeper-gadget>
   "minesweeper" open-window ;
 
 MAIN: minesweeper-main
