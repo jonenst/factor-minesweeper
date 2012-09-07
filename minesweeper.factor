@@ -53,22 +53,31 @@ TUPLE: minecell-gadget < checkbox minecell ;
 : <minesweeper-gadget> ( grid -- gadget )
   cells>> add-rows ;
 
-: add-game ( toplevel -- )
-  { 5 5 } 5 <random-grid> <minesweeper-gadget> add-gadget relayout ;
+: add-game ( toplevel params -- )
+  unclip-last <random-grid> <minesweeper-gadget> add-gadget relayout ;
 : remove-game ( toplevel -- )
   1 swap nth-gadget unparent ;
-: new-game ( toplevel -- )
-  [ remove-game ] [ add-game ] bi ;
+: new-game ( toplevel params -- )
+  [ drop remove-game ] [ add-game ] 2bi ;
 
-:: add-minesweeper-menu ( toplevel -- menu )
-  toplevel <shelf>
-  { "rows:" "cols:" "mines:" }
-  [ "5" <model> <model-field> swap <labeled-gadget> ] map add-gadgets
-  "New game" [ drop toplevel new-game ] <border-button> add-gadget
+: add-fields ( parent default-params -- parent models )
+  { "rows:" "cols:" "mines:" } swap [ <model> ] map [
+    [ <model-field> swap <labeled-gadget> ] 2map add-gadgets
+  ] keep ;
+
+:: add-minesweeper-menu ( default-params toplevel -- menu )
+  toplevel <shelf> default-params add-fields :> models
+  "New game" [
+    drop toplevel
+    models [ value>> string>number ] map new-game
+  ] <border-button> add-gadget
   add-gadget ;
-: <minesweeper-main> ( -- gadget )
+: <minesweeper-main> ( default-params -- gadget )
   <pile> add-minesweeper-menu ;
 : minesweeper-main ( -- )
-   <minesweeper-main> [ add-game ] [ "minesweeper" open-window ] bi ;
+  { "5" "5" "5" }
+  [ <minesweeper-main> dup ]
+  [ [ string>number ] map add-game ] bi
+  "minesweeper" open-window ;
 
 MAIN: minesweeper-main
