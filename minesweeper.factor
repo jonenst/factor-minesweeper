@@ -5,7 +5,7 @@ locals math math.parser minesweeper.engine models
 models.arrow.smart sequences ui ui.gadgets ui.gadgets.buttons
 ui.gadgets.buttons.private ui.gadgets.editors
 ui.gadgets.labeled ui.gadgets.labels ui.gadgets.packs
-ui.gestures ui.images ui.pens ui.pens.image ;
+ui.gadgets.worlds ui.gestures ui.images ui.pens ui.pens.image ;
 IN: minesweeper
 
 : neighbours-string ( n -- string )
@@ -48,13 +48,17 @@ TUPLE: minecell-gadget < checkbox minecell ;
 : add-row ( pile cells -- pile )
   <shelf> [ <minecell-gadget> add-gadget ] reduce add-gadget ;
 : add-rows ( cells -- gadget )
-  <pile> [ add-row  ] reduce ;
+  <pile> [ add-row ] reduce ;
 
 : <minesweeper-gadget> ( grid -- gadget )
   cells>> add-rows ;
 
+: adapt-window ( gadget -- )
+  dup find-world [
+    swap [ handle>> window>> ] [ pref-dim first2 ] bi* gtk_window_resize
+  ] [ drop ] if* ;
 : add-game ( toplevel params -- )
-  unclip-last <random-grid> <minesweeper-gadget> add-gadget relayout ;
+  unclip-last <random-grid> <minesweeper-gadget> add-gadget adapt-window ;
 : remove-game ( toplevel -- )
   1 swap nth-gadget unparent ;
 : new-game ( toplevel params -- )
