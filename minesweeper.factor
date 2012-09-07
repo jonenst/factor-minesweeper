@@ -19,8 +19,10 @@ IN: minesweeper
   [ minecell-label ] <smart-arrow> <label-control> ;
 
 TUPLE: minecell-gadget < checkbox minecell ;
+: check-end ( grid -- )
+  finished? [ "lose" "win" ? "You" "!" surround <label> "minesweeper" open-window ] [ drop ] if ;
 : minecell-leftclicked ( gadget -- )
-  minecell>> demine-cell ;
+  minecell>> [ demine-cell ] [ grid>> check-end ] bi ;
 : minecell-rightclicked ( gadget -- )
   minecell>> guess>> toggle-model ;
 

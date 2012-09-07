@@ -6,7 +6,14 @@ sequences.product ;
 IN: minesweeper.engine
 
 TUPLE: minecell selected guess idx mined? grid ;
-TUPLE: grid dim cells ;
+TUPLE: grid dim cells total-mines ;
+
+: won? ( seq -- ? )
+  [ [ mined?>> not ] [ selected>> value>> not ] bi and ] any? not ;
+: lost? ( grid -- ? )
+  [ [ mined?>> ] [ selected>> value>> ] bi and ] any? ;
+: finished? ( grid -- loss? ? )
+  cells>> concat [ won? ] [ lost? ] bi [ nip ] [ or ] 2bi ;
 
 : Mi,j ( idx M -- x )
   [ swap nth ] reduce ;
@@ -28,7 +35,7 @@ TUPLE: grid dim cells ;
 : neighbour-mines ( minecell -- n )
   [ idx>> ] [ grid>> ] bi
   [ dim>> neighbours ] [ nip cells>> ] 2bi
-  Mi,js [ mined?>> ] filter length ;
+  Mi,js [ mined?>> ] count ;
 
 DEFER: demine-cell
 : ?demine-neighbours ( minecell -- )

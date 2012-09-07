@@ -57,3 +57,7 @@ CONSTANT: test-grid $[ (test-grid) ]
 { $[
   3 3 zero-matrix [ 2drop t ] mmap-index
 ] } [ { 3 3 } <empty-grid> cells>> [ { 0 0 } swap Mi,j demine-cell ] [ [ drop selected>> value>> ] mmap-index ] bi ] unit-test
+
+{ f t } [ { 3 3 } <empty-grid> [ cells>> { 0 0 } swap Mi,j demine-cell ] [ finished? ] bi ] unit-test
+{ t t } [ (test-grid) [ cells>> { 1 1 } swap Mi,j demine-cell ] [ finished? ] bi ] unit-test
+{ f f } [ (test-grid) [ cells>> { 0 0 } swap Mi,j demine-cell ] [ finished? ] bi ] unit-test
