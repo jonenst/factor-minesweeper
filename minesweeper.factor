@@ -3,7 +3,8 @@
 USING: accessors combinators grouping io.pathnames kernel
 locals math math.parser minesweeper.engine models
 models.arrow.smart sequences ui ui.gadgets ui.gadgets.buttons
-ui.gadgets.buttons.private ui.gadgets.labels ui.gadgets.packs
+ui.gadgets.buttons.private ui.gadgets.editors
+ui.gadgets.labeled ui.gadgets.labels ui.gadgets.packs
 ui.gestures ui.images ui.pens ui.pens.image ;
 IN: minesweeper
 
@@ -52,8 +53,22 @@ TUPLE: minecell-gadget < checkbox minecell ;
 : <minesweeper-gadget> ( grid -- gadget )
   cells>> add-rows ;
 
+: add-game ( toplevel -- )
+  { 5 5 } 5 <random-grid> <minesweeper-gadget> add-gadget relayout ;
+: remove-game ( toplevel -- )
+  1 swap nth-gadget unparent ;
+: new-game ( toplevel -- )
+  [ remove-game ] [ add-game ] bi ;
+
+:: add-minesweeper-menu ( toplevel -- menu )
+  toplevel <shelf>
+  { "rows:" "cols:" "mines:" }
+  [ "5" <model> <model-field> swap <labeled-gadget> ] map add-gadgets
+  "New game" [ drop toplevel new-game ] <border-button> add-gadget
+  add-gadget ;
+: <minesweeper-main> ( -- gadget )
+  <pile> add-minesweeper-menu ;
 : minesweeper-main ( -- )
-  { 5 5 } 5 <random-grid> <minesweeper-gadget>
-  "minesweeper" open-window ;
+   <minesweeper-main> [ add-game ] [ "minesweeper" open-window ] bi ;
 
 MAIN: minesweeper-main

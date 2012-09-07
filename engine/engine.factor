@@ -1,8 +1,8 @@
 ! Copyright (C) 2012 Jon Harper.
 ! See http://factorcode.org/license.txt for BSD license.
 USING: accessors arrays kernel locals math math.matrices
-math.order math.ranges math.vectors models sequences
-sequences.product ;
+math.order math.ranges math.vectors models random sequences
+sequences.product sets ;
 IN: minesweeper.engine
 
 TUPLE: minecell selected guess idx mined? grid ;
