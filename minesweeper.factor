@@ -51,7 +51,7 @@ TUPLE: minecell-gadget < checkbox minecell ;
   [ m>> ] [ cells>> ] bi swap group add-rows ;
 
 : minesweeper-main ( -- )
-  <example-grid> <minesweeper-gadget>
+  { 3 3 } <empty-grid> <minesweeper-gadget>
   "minesweeper" open-window ;
 
 MAIN: minesweeper-main

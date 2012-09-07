@@ -1,7 +1,12 @@
 ! Copyright (C) 2012 Jon Harper.
 ! See http://factorcode.org/license.txt for BSD license.
-USING: accessors kernel models sequences math.matrices math.ranges ;
+USING: accessors arrays kernel locals math math.matrices
+math.order math.ranges math.vectors models sequences
+sequences.product ;
 IN: minesweeper.engine
+
+TUPLE: minecell selected guess idx mined? grid ;
+TUPLE: grid dim cells ;
 
 : Mi,j ( idx M -- x )
   [ swap nth ] reduce ;
@@ -25,16 +30,11 @@ IN: minesweeper.engine
   [ dim>> neighbours ] [ nip cells>> ] 2bi
   Mi,js [ mined?>> ] filter length ;
 
-TUPLE: minecell selected guess idx mined? grid ;
 : <minecell> ( idx mined? grid -- minecell )
   [ f <model> f <model> ] 3dip \ minecell boa ;
-
-TUPLE: grid dim cells ;
 
 :: empty-cells ( dim grid -- cells )
   dim first2 zero-matrix [ nip f grid <minecell> ] mmap-index ;
 : <empty-grid> ( dim -- grid )
   \ grid new [ empty-cells ] [ swap >>dim swap >>cells ] 2bi ;
-
-
 
