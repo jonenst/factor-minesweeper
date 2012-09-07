@@ -53,8 +53,22 @@ DEFER: demine-cell
 : <minecell> ( idx mined? grid -- minecell )
   [ f <model> f <model> ] 3dip \ minecell boa ;
 
+: <grid> ( dim mines quot: ( dim mines grid -- cells ) -- grid )
+  [ \ grid new ] dip
+  [ swap >>total-mines swap >>dim swap >>cells ] 3bi ; inline
+
 :: empty-cells ( dim grid -- cells )
   dim first2 zero-matrix [ nip f grid <minecell> ] mmap-index ;
 : <empty-grid> ( dim -- grid )
-  \ grid new [ empty-cells ] [ swap >>dim swap >>cells ] 2bi ;
+  0 [ nip empty-cells ] <grid> ;
 
+: random-indices ( dim mines -- indices )
+  [ drop first2 zero-matrix [ nip ] mmap-index concat ] [ nip sample ] 2bi ;
+: random-matrix ( dim mines -- matrix )
+  [ drop first2 zero-matrix ] [ random-indices ] 2bi
+  [ in? nip ] curry mmap-index ;
+:: random-cells ( dim mines grid -- cells )
+  dim mines random-matrix
+  [ swap grid <minecell> ] mmap-index ;
+: <random-grid> ( dim mines -- grid )
+  [ random-cells ] <grid> ;

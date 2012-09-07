@@ -53,9 +53,7 @@ TUPLE: minecell-gadget < checkbox minecell ;
   cells>> add-rows ;
 
 : minesweeper-main ( -- )
-  { 3 3 } <empty-grid> [
-    [ [ { 1 1 } t ] dip <minecell> { 1 1 } ] [ cells>> ] bi Mi,j!
-  ] keep <minesweeper-gadget>
+  { 5 5 } 5 <random-grid> <minesweeper-gadget>
   "minesweeper" open-window ;
 
 MAIN: minesweeper-main
