@@ -6,14 +6,19 @@ sequences.product sets ;
 IN: minesweeper.engine
 
 TUPLE: minecell selected guess idx mined? grid ;
-TUPLE: grid dim cells total-mines ;
+TUPLE: grid dim cells total-mines finished loss ;
 
+: update-finish-model ( grid loss? -- )
+  >>loss finished>> t swap set-model ;
+: ?update-finish-model ( grid loss? finished? -- )
+  [ update-finish-model ] [ 2drop ] if ;
 : won? ( seq -- ? )
   [ [ mined?>> not ] [ selected>> value>> not ] bi and ] any? not ;
 : lost? ( grid -- ? )
   [ [ mined?>> ] [ selected>> value>> ] bi and ] any? ;
 : finished? ( grid -- loss? ? )
-  cells>> concat [ won? ] [ lost? ] bi [ nip ] [ or ] 2bi ;
+  [ cells>> concat [ won? ] [ lost? ] bi [ nip ] [ or ] 2bi ]
+  [ -rot [ ?update-finish-model ] 2keep ] bi ;
 
 : Mi,j ( idx M -- x )
   [ swap nth ] reduce ;
@@ -53,14 +58,14 @@ DEFER: demine-cell
 : <minecell> ( idx mined? grid -- minecell )
   [ f <model> f <model> ] 3dip \ minecell boa ;
 
-: <grid> ( dim mines quot: ( dim mines grid -- cells ) -- grid )
+: <grid> ( finish-model dim mines quot: ( dim mines grid -- cells ) -- grid )
   [ \ grid new ] dip
-  [ swap >>total-mines swap >>dim swap >>cells ] 3bi ; inline
+  [ swap >>total-mines swap >>dim swap >>cells swap >>finished ] 3bi ; inline
 
 :: empty-cells ( dim grid -- cells )
   dim first2 zero-matrix [ nip f grid <minecell> ] mmap-index ;
 : <empty-grid> ( dim -- grid )
-  0 [ nip empty-cells ] <grid> ;
+  [ f <model> ] dip 0 [ nip empty-cells ] <grid> ;
 
 : random-indices ( dim mines -- indices )
   [ drop first2 zero-matrix [ nip ] mmap-index concat ] [ nip sample ] 2bi ;
@@ -70,5 +75,5 @@ DEFER: demine-cell
 :: random-cells ( dim mines grid -- cells )
   dim mines random-matrix
   [ swap grid <minecell> ] mmap-index ;
-: <random-grid> ( dim mines -- grid )
+: <random-grid> ( finish-model dim mines -- grid )
   [ random-cells ] <grid> ;

@@ -1,12 +1,14 @@
 ! Copyright (C) 2012 Jon Harper.
 ! See http://factorcode.org/license.txt for BSD license.
-USING: accessors colors colors.constants combinators fonts
-grouping gtk.ffi io.pathnames kernel locals math math.order
-math.parser minesweeper.engine models models.arrow.smart
-sequences ui ui.gadgets ui.gadgets.buttons
-ui.gadgets.buttons.private ui.gadgets.editors
-ui.gadgets.labeled ui.gadgets.labels ui.gadgets.packs
-ui.gadgets.worlds ui.gestures ui.images ui.pens ui.pens.image ;
+USING: accessors calendar calendar.format colors
+colors.constants combinators fonts grouping gtk.ffi
+io.pathnames io.streams.string kernel locals math math.order
+math.parser minesweeper.engine models models.arrow
+models.arrow.smart sequences timers ui ui.gadgets
+ui.gadgets.buttons ui.gadgets.buttons.private
+ui.gadgets.editors ui.gadgets.labeled ui.gadgets.labels
+ui.gadgets.packs ui.gadgets.worlds ui.gestures ui.images
+ui.pens ui.pens.image ;
 IN: minesweeper
 
 CONSTANT: number-colors {
@@ -71,30 +73,38 @@ TUPLE: minecell-gadget < checkbox minecell ;
   dup find-world [
     swap [ handle>> window>> ] [ pref-dim first2 ] bi* gtk_window_resize
   ] [ drop ] if* ;
-: add-game ( toplevel params -- )
+: add-game ( toplevel finish-model params -- )
   unclip-last <random-grid> <minesweeper-gadget> add-gadget adapt-window ;
-: remove-game ( toplevel -- )
-  1 swap nth-gadget unparent ;
-: new-game ( toplevel params -- )
-  [ drop remove-game ] [ add-game ] 2bi ;
+: remove-game ( toplevel finish-model -- )
+  [ 1 swap nth-gadget unparent ] [ f swap set-model ] bi* ;
+: new-game ( toplevel finish-model params -- )
+  [ drop remove-game ] [ add-game ] 3bi ;
 
 : add-fields ( parent default-params -- parent models )
   { "rows:" "cols:" "mines:" } swap [ <model> ] map [
     [ <model-field> swap <labeled-gadget> ] 2map add-gadgets
   ] keep ;
 
-:: add-minesweeper-menu ( default-params toplevel -- menu )
+:: add-minesweeper-menu ( default-params toplevel -- toplevel finish-model )
   toplevel <shelf> default-params add-fields :> models
-  "New game" [
-    drop toplevel
-    models [ value>> string>number ] map new-game
-  ] <border-button> add-gadget
-  add-gadget ;
-: <minesweeper-main> ( default-params -- gadget )
+  f <model> :> finish-model
+  <pile>
+    "New game" [
+      drop toplevel finish-model
+      models [ value>> string>number ] map new-game
+    ] <border-button> add-gadget
+    finish-model [let now :> previous! [ [ previous ] [ now dup previous! ] if ] ] <arrow> :> last-started
+    now <model> :> now-model
+    [ finish-model value>> [ now now-model set-model ] unless ] 1 seconds every drop
+    now-model last-started [ time- 1 seconds time+ [ (timestamp>hms) ] with-string-writer ]
+    <smart-arrow> <label-control> add-gadget
+  add-gadget
+  add-gadget finish-model ;
+: <minesweeper-main> ( default-params -- gadget finish-model )
   <pile> add-minesweeper-menu ;
 : minesweeper-main ( -- )
   { "5" "5" "5" }
-  [ <minesweeper-main> dup ]
+  [ <minesweeper-main> dupd ]
   [ [ string>number ] map add-game ] bi
   "minesweeper" open-window ;
 
