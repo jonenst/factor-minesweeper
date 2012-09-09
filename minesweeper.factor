@@ -17,12 +17,20 @@ CONSTANT: number-colors {
   COLOR: red
 }
 
-: minesweeper-label-theme ( n label -- label )
-  [
-    [ 1 - 0 2 clamp number-colors nth ] [ swap font-with-foreground ] bi*
-    T{ rgba f 1 0 0 0 } font-with-background
-    t >>bold?
-  ] with change-font ;
+: base-theme ( label -- label )
+  t >>bold?  T{ rgba f 1 0 0 0 } font-with-background ;
+: unmined-theme ( n label -- label )
+  base-theme 
+  [ 1 - 0 2 clamp number-colors nth ]
+  [ swap font-with-foreground ] bi* ;
+: guess-theme ( label -- label )
+  base-theme COLOR: black font-with-foreground ;
+: minesweeper-label-theme ( label guess mined? n -- label )
+  -rot [ {
+    { [ ] [ 2drop guess-theme ] }
+    { [ ] [ drop guess-theme ] }
+    [ swap unmined-theme ]
+  } cond ] 3curry change-font ;
 : neighbours-string ( n -- string )
    [ "" ] [ number>string ] if-zero ;
 :: minecell-label ( selected guess mined? neighbours -- str )
@@ -33,15 +41,24 @@ CONSTANT: number-colors {
     [ mined?>> <model> ] [ neighbour-mines <model> ]
   } cleave
   [ [ minecell-label ] <smart-arrow> <label-control> ]
-  [ value>> swap minesweeper-label-theme ] bi ;
+  [ [ value>> ] tri@ minesweeper-label-theme ] 3bi ;
 
 TUPLE: minecell-gadget < checkbox minecell ;
 : check-end ( grid -- )
   finished? [ "lose" "win" ? "You" "!" surround <label> "minesweeper" open-window ] [ drop ] if ;
+: apply-label-theme ( gadget -- )
+[ gadget-child ] [ minecell>>
+  [ guess>> value>> ]
+  [ mined?>> ]
+  [ neighbour-mines ] tri
+] bi minesweeper-label-theme drop ;
+
 : minecell-leftclicked ( gadget -- )
-  minecell>> [ demine-cell ] [ grid>> check-end ] bi ;
+  [ minecell>> [ demine-cell ] [ grid>> check-end ] bi ]
+  [ apply-label-theme ] bi ;
 : minecell-rightclicked ( gadget -- )
-  minecell>> guess>> toggle-model ;
+  [ minecell>> guess>> toggle-model ]
+  [ apply-label-theme ] bi ;
 
 : minesweeper-image-pen ( string -- path )
   "vocab:minesweeper/" prepend-path ".png" append <image-name> <image-pen> ;
@@ -69,12 +86,8 @@ TUPLE: minecell-gadget < checkbox minecell ;
 : <minesweeper-gadget> ( grid -- gadget )
   cells>> add-rows ;
 
-: adapt-window ( gadget -- )
-  dup find-world [
-    swap [ handle>> window>> ] [ pref-dim first2 ] bi* gtk_window_resize
-  ] [ drop ] if* ;
 : add-game ( toplevel finish-model params -- )
-  unclip-last <random-grid> <minesweeper-gadget> add-gadget adapt-window ;
+  unclip-last <random-grid> <minesweeper-gadget> add-gadget relayout-window ;
 : remove-game ( toplevel finish-model -- )
   [ 1 swap nth-gadget unparent ] [ f swap set-model ] bi* ;
 : new-game ( toplevel finish-model params -- )
