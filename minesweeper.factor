@@ -135,6 +135,6 @@ TUPLE: minesweeper-gadget < pack ;
 : <minesweeper-main> ( -- gadget )
   \ minesweeper-gadget new vertical >>orientation add-minesweeper-menu ;
 : minesweeper-main ( -- )
-  <minesweeper-main> "Minesweeper" open-window ;
+  [ <minesweeper-main> "Minesweeper" open-window ] with-ui ;
 
 MAIN: minesweeper-main
