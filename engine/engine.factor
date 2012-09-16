@@ -1,8 +1,9 @@
 ! Copyright (C) 2012 Jon Harper.
 ! See http://factorcode.org/license.txt for BSD license.
 USING: accessors arrays combinators.short-circuit fry kernel
-math math.order math.ranges math.vectors models random
-sequences sequences.extras sequences.product ;
+math math.order math.ranges math.vectors models models.arrow
+models.product random sequences sequences.extras
+sequences.product ;
 IN: minesweeper.engine
 
 TUPLE: minecell idx mined? grid cleared? marked? ;

@@ -1,11 +1,11 @@
 ! Copyright (C) 2012 Jon Harper.
 ! See http://factorcode.org/license.txt for BSD license.
-USING: accessors calendar calendar.format colors
-colors.constants combinators fonts grouping gtk.ffi
-io.pathnames io.streams.string kernel locals math math.order
-math.parser minesweeper.engine models models.arrow
-models.arrow.smart sequences timers ui ui.gadgets
-ui.gadgets.buttons ui.gadgets.buttons.private
+USING: accessors arrays calendar calendar.format colors
+colors.constants combinators fonts generalizations grouping
+gtk.ffi io.pathnames io.streams.string kernel locals math
+math.order math.parser minesweeper.engine models models.arrow
+models.arrow.smart models.product sequences timers ui
+ui.gadgets ui.gadgets.buttons ui.gadgets.buttons.private
 ui.gadgets.editors ui.gadgets.labeled ui.gadgets.labels
 ui.gadgets.packs ui.gadgets.worlds ui.gestures ui.images
 ui.pens ui.pens.image ;
@@ -21,23 +21,27 @@ TUPLE: fancy-label-control < label ;
 : <fancy-label-control> ( model -- label )
   "" fancy-label-control new-label swap >>model ;
 
-: base-theme ( label -- label )
+: base-font ( font -- font )
   t >>bold?  T{ rgba f 1 0 0 0 } font-with-background ;
-: unmined-theme ( n label -- label )
-  base-theme 
+: cleared-font ( n font -- font )
+  base-font
   [ 1 - 0 2 clamp number-colors nth ]
   [ swap font-with-foreground ] bi* ;
-: marked-theme ( label -- label )
-  base-theme COLOR: black font-with-foreground ;
-: minesweeper-label-theme ( label marked? mined? n -- label )
-  -rot [ {
-    { [ ] [ 2drop marked-theme ] }
-    { [ ] [ drop marked-theme ] }
-    [ swap unmined-theme ]
-  } cond ] 3curry change-font ;
+: marked-font ( font -- font )
+  base-font COLOR: black font-with-foreground ;
+: explosion-font ( font -- font )
+  base-font COLOR: DarkRed font-with-foreground ;
+
+:: minesweeper-font ( cleared? marked? mined? n -- font )
+  sans-serif-font {
+    { [ cleared? mined? and ] [ explosion-font ] }
+    { [ cleared? mined? not and ] [ n swap cleared-font ] }
+    { [ marked? ] [ marked-font ] }
+    [ base-font ]
+  } cond ;
 
 M: fancy-label-control model-changed
-  swap value>> [ first >>string ] [ second first3 minesweeper-label-theme ] bi relayout ;
+  swap value>> [ first >>string ] [ second >>font ] bi relayout ;
 : neighbours-string ( n -- string )
    [ "" ] [ number>string ] if-zero ;
 :: minecell-label ( cleared? marked? mined? neighbours -- str )
@@ -47,8 +51,9 @@ M: fancy-label-control model-changed
   { [ cleared?>> ] [ marked?>> ]
     [ mined?>> <model> ] [ neighbour-mines <model> ]
   } cleave
-  [ [ minecell-label ] <smart-arrow> ]
-  [ 3array <product> ] 3bi 2array <product> <fancy-label-control> ;
+  { [ [ minecell-label ] <smart-arrow> ]
+  [ [ minesweeper-font ] <smart-arrow> ] } 4 ncleave
+  2array <product> <fancy-label-control> ;
 
 TUPLE: minecell-gadget < checkbox minecell ;
 
@@ -106,7 +111,7 @@ TUPLE: minecell-gadget < checkbox minecell ;
     [ <model-field> swap <labeled-gadget> ] 2map add-gadgets
   ] keep ;
 
-CONSTANT: default-params { "5" "5" "5" } 
+CONSTANT: default-params { "5" "5" "5" }
 : models>values ( models -- values ) [ value>> string>number ] map ;
 :: add-minesweeper-menu ( toplevel -- toplevel )
   toplevel
@@ -114,7 +119,7 @@ CONSTANT: default-params { "5" "5" "5" }
     <shelf> default-params add-fields :> models add-gadget
     <pile>
       "New game" [
-        drop toplevel 
+        drop toplevel
         models models>values new-game
       ] <border-button> add-gadget
 !    finish-model [let now :> previous! [ [ previous ] [ now dup previous! ] if ] ] <arrow> :> last-started
