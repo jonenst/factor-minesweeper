@@ -17,6 +17,10 @@ CONSTANT: number-colors {
   COLOR: red
 }
 
+TUPLE: fancy-label-control < label ;
+: <fancy-label-control> ( model -- label )
+  "" fancy-label-control new-label swap >>model ;
+
 : base-theme ( label -- label )
   t >>bold?  T{ rgba f 1 0 0 0 } font-with-background ;
 : unmined-theme ( n label -- label )
@@ -31,6 +35,9 @@ CONSTANT: number-colors {
     { [ ] [ drop marked-theme ] }
     [ swap unmined-theme ]
   } cond ] 3curry change-font ;
+
+M: fancy-label-control model-changed
+  swap value>> [ first >>string ] [ second first3 minesweeper-label-theme ] bi relayout ;
 : neighbours-string ( n -- string )
    [ "" ] [ number>string ] if-zero ;
 :: minecell-label ( cleared? marked? mined? neighbours -- str )
@@ -40,23 +47,13 @@ CONSTANT: number-colors {
   { [ cleared?>> ] [ marked?>> ]
     [ mined?>> <model> ] [ neighbour-mines <model> ]
   } cleave
-  [ [ minecell-label ] <smart-arrow> <label-control> ]
-  [ [ value>> ] tri@ minesweeper-label-theme ] 3bi ;
+  [ [ minecell-label ] <smart-arrow> ]
+  [ 3array <product> ] 3bi 2array <product> <fancy-label-control> ;
 
 TUPLE: minecell-gadget < checkbox minecell ;
-: apply-label-theme ( gadget -- )
-[ gadget-child ] [ minecell>>
-  [ marked?>> value>> ]
-  [ mined?>> ]
-  [ neighbour-mines ] tri
-] bi minesweeper-label-theme drop ;
 
-: minecell-leftclicked ( gadget -- )
-  [ minecell>> demine-cell ]
-  [ apply-label-theme ] bi ;
-: minecell-rightclicked ( gadget -- )
-  [ minecell>> marked?>> toggle-model ]
-  [ apply-label-theme ] bi ;
+: minecell-leftclicked ( gadget -- ) minecell>> demine-cell ;
+: minecell-rightclicked ( gadget -- ) minecell>> marked?>> toggle-model ;
 
 : minesweeper-image-pen ( string -- path )
   "vocab:minesweeper/" prepend-path ".png" append <image-name> <image-pen> ;
