@@ -1,33 +1,38 @@
 ! Copyright (C) 2012 Jon Harper.
 ! See http://factorcode.org/license.txt for BSD license.
-USING: accessors arrays kernel locals math math.matrices
-math.order math.ranges math.vectors models random sequences
-sequences.product sets ;
+USING: accessors arrays combinators.short-circuit fry kernel
+math math.order math.ranges math.vectors models random
+sequences sequences.extras sequences.product ;
 IN: minesweeper.engine
 
-TUPLE: minecell selected guess idx mined? grid ;
-TUPLE: grid dim cells total-mines finished loss ;
+TUPLE: minecell idx mined? grid cleared? marked? ;
+TUPLE: grid dim cells total-mines finished? won? ;
 
-: update-finish-model ( grid loss? -- )
-  >>loss finished>> t swap set-model ;
-: ?update-finish-model ( grid loss? finished? -- )
-  [ update-finish-model ] [ 2drop ] if ;
-: won? ( seq -- ? )
-  [ [ mined?>> not ] [ selected>> value>> not ] bi and ] any? not ;
+: cleared-all? ( cells -- ? )
+  [ [ mined?>> not ] [ cleared?>> value>> not ] bi and ] none? ;
+: marked-all? ( cells -- ? )
+  [ [ mined?>> ] [ marked?>> value>> not ] bi and ] none? ;
+: won? ( seq -- ? ) { [ cleared-all? ] [ marked-all? ] } 1&& ;
 : lost? ( grid -- ? )
-  [ [ mined?>> ] [ selected>> value>> ] bi and ] any? ;
-: finished? ( grid -- loss? ? )
-  [ cells>> concat [ won? ] [ lost? ] bi [ nip ] [ or ] 2bi ]
-  [ -rot [ ?update-finish-model ] 2keep ] bi ;
+  [ [ mined?>> ] [ cleared?>> value>> ] bi and ] any? ;
+: finished? ( grid -- won? finished? )
+  cells>> concat [ won? ] [ lost? ] bi [ drop ] [ or ] 2bi ;
 
+: <matrix> ( dim n -- matrix )
+  [ first2 ] [ '[ _ [ _ ] replicate ] replicate ] bi* ;
 : Mi,j ( idx M -- x )
   [ swap nth ] reduce ;
 : Mi,js ( seq M -- seq )
   [ Mi,j ] curry map ;
 : Mi,j! ( el idx M -- )
   [ first2 swap ] [ nth set-nth ] bi* ;
-: mmap-index ( ... M quot: ( ... el idx -- ... el ) -- ... )
-  [ [ [ swap 2array ] prepose call ] curry curry map-index ] curry map-index ; inline
+: mmap-index ( ... M quot: ( ... el idx -- ... el ) -- ... M' )
+  [ swap 2array ] prepose
+  [ curry map-index ] curry map-index ; inline
+: mmap-index* ( M quot: ( ... idx -- ... el ) -- ... M' )
+  [ nip ] prepose mmap-index ; inline
+: <matrix*> ( dim quot: ( ... idx -- ... el ) -- ... )
+  [ f <matrix> ] [ mmap-index* ] bi* ; inline
 
 : (all-neighbours) ( idx n -- seq )
  [ neg ] keep [a,b] dup 2array [ v+ ] with product-map ;
@@ -45,35 +50,42 @@ TUPLE: grid dim cells total-mines finished loss ;
 DEFER: demine-cell
 : ?demine-neighbours ( minecell -- )
   dup [ neighbour-mines zero? ] [ mined?>> not ] bi and [
-    [ [ idx>> ] [ grid>> dim>> ] bi neighbours ] [ grid>> cells>> ] bi [
+    [ [ idx>> ] [ grid>> dim>> ] bi neighbours ]
+    [ grid>> cells>> ] bi [
       Mi,j demine-cell
     ] curry each
   ] [ drop ] if ;
 : demine-cell ( minecell -- )
-  dup selected>> value>> [ drop ] [
-    [ selected>> t swap set-model ]
+  dup cleared?>> value>> [ drop ] [
+    [ cleared?>> t swap set-model ]
     [ ?demine-neighbours ] bi
   ] if ;
 
 : <minecell> ( idx mined? grid -- minecell )
-  [ f <model> f <model> ] 3dip \ minecell boa ;
+  f <model> f <model> \ minecell boa ;
 
-: <grid> ( finish-model dim mines quot: ( dim mines grid -- cells ) -- grid )
+
+: check-finished ( grid -- finished? )
+  dup finished? [ >>won? drop ] dip ;
+
+: <finish-in-model> ( cells -- model )
+  concat [ cleared?>> ] [ marked?>> ] [ map <product> ] bi-curry@ bi 2array <product> ;
+: <finish-arrow> ( grid -- arrow )
+  [ cells>> <finish-in-model> ]
+  [ [ nip check-finished ] curry ] bi <arrow> ;
+: <grid> ( dim mines quot: ( dim mines grid -- cells ) -- grid )
   [ \ grid new ] dip
-  [ swap >>total-mines swap >>dim swap >>cells swap >>finished ] 3bi ; inline
+  [ swap >>total-mines swap >>dim swap >>cells ] 3bi
+  dup <finish-arrow> >>finished? ; inline
 
-:: empty-cells ( dim grid -- cells )
-  dim first2 zero-matrix [ nip f grid <minecell> ] mmap-index ;
-: <empty-grid> ( dim -- grid )
-  [ f <model> ] dip 0 [ nip empty-cells ] <grid> ;
-
+: all-indices ( dim -- indices ) [ ] <matrix*> concat ;
 : random-indices ( dim mines -- indices )
-  [ drop first2 zero-matrix [ nip ] mmap-index concat ] [ nip sample ] 2bi ;
+  [ drop all-indices ] [ nip sample ] 2bi ;
 : random-matrix ( dim mines -- matrix )
-  [ drop first2 zero-matrix ] [ random-indices ] 2bi
-  [ in? nip ] curry mmap-index ;
-:: random-cells ( dim mines grid -- cells )
-  dim mines random-matrix
-  [ swap grid <minecell> ] mmap-index ;
-: <random-grid> ( finish-model dim mines -- grid )
-  [ random-cells ] <grid> ;
+  dupd random-indices [ member? ] curry <matrix*> ;
+: random-cells ( dim mines grid -- cells )
+  [ random-matrix ] [ 
+    '[ swap _ <minecell> ] mmap-index
+  ] bi* ;
+: <random-grid> ( dim mines -- grid ) [ random-cells ] <grid> ;
+: <empty-grid> ( dim -- grid ) 0 <random-grid> ;

@@ -23,41 +23,39 @@ CONSTANT: number-colors {
   base-theme 
   [ 1 - 0 2 clamp number-colors nth ]
   [ swap font-with-foreground ] bi* ;
-: guess-theme ( label -- label )
+: marked-theme ( label -- label )
   base-theme COLOR: black font-with-foreground ;
-: minesweeper-label-theme ( label guess mined? n -- label )
+: minesweeper-label-theme ( label marked? mined? n -- label )
   -rot [ {
-    { [ ] [ 2drop guess-theme ] }
-    { [ ] [ drop guess-theme ] }
+    { [ ] [ 2drop marked-theme ] }
+    { [ ] [ drop marked-theme ] }
     [ swap unmined-theme ]
   } cond ] 3curry change-font ;
 : neighbours-string ( n -- string )
    [ "" ] [ number>string ] if-zero ;
-:: minecell-label ( selected guess mined? neighbours -- str )
-  selected [ mined? "X" neighbours neighbours-string ? ]
-  [ guess "!" "" ? ] if ;
+:: minecell-label ( cleared? marked? mined? neighbours -- str )
+  cleared? [ mined? "X" neighbours neighbours-string ? ]
+  [ marked? "!" "" ? ] if ;
 : <minecell-label> ( minecell -- label )
-  { [ selected>> ] [ guess>> ]
+  { [ cleared?>> ] [ marked?>> ]
     [ mined?>> <model> ] [ neighbour-mines <model> ]
   } cleave
   [ [ minecell-label ] <smart-arrow> <label-control> ]
   [ [ value>> ] tri@ minesweeper-label-theme ] 3bi ;
 
 TUPLE: minecell-gadget < checkbox minecell ;
-: check-end ( grid -- )
-  finished? [ "lose" "win" ? "You" "!" surround <label> "minesweeper" open-window ] [ drop ] if ;
 : apply-label-theme ( gadget -- )
 [ gadget-child ] [ minecell>>
-  [ guess>> value>> ]
+  [ marked?>> value>> ]
   [ mined?>> ]
   [ neighbour-mines ] tri
 ] bi minesweeper-label-theme drop ;
 
 : minecell-leftclicked ( gadget -- )
-  [ minecell>> [ demine-cell ] [ grid>> check-end ] bi ]
+  [ minecell>> demine-cell ]
   [ apply-label-theme ] bi ;
 : minecell-rightclicked ( gadget -- )
-  [ minecell>> guess>> toggle-model ]
+  [ minecell>> marked?>> toggle-model ]
   [ apply-label-theme ] bi ;
 
 : minesweeper-image-pen ( string -- path )
@@ -68,7 +66,7 @@ TUPLE: minecell-gadget < checkbox minecell ;
   dup dup interior>> pen-pref-dim >>min-dim { 10 0 } >>size ;
 
 : <minecell-gadget> ( minecell -- gadget )
-  [ ] [ selected>> ] [ <minecell-label> ] tri
+  [ ] [ cleared?>> ] [ <minecell-label> ] tri
   [ minecell-leftclicked ] minecell-gadget new-button
   swap >>model swap >>minecell
   minecell-theme ;
@@ -83,42 +81,58 @@ TUPLE: minecell-gadget < checkbox minecell ;
 : add-rows ( cells -- gadget )
   <pile> [ add-row ] reduce ;
 
-: <minesweeper-gadget> ( grid -- gadget )
+: <minegrid-gadget> ( grid -- gadget )
   cells>> add-rows ;
 
-: add-game ( toplevel finish-model params -- )
-  unclip-last <random-grid> <minesweeper-gadget> add-gadget relayout-window ;
-: remove-game ( toplevel finish-model -- )
-  [ 1 swap nth-gadget unparent ] [ f swap set-model ] bi* ;
-: new-game ( toplevel finish-model params -- )
-  [ drop remove-game ] [ add-game ] 3bi ;
+: status-str ( won? finished? -- str ) [ "Victory !" "BOOOOOM" ? ] [ drop "Playing" ] if ;
+: <status-control> ( grid -- control )
+  dup finished?>> [ [ won?>> ] [ status-str ] bi* ] with <arrow> <label-control> ;
+: status-container ( toplevel -- child ) gadget-child 1 swap nth-gadget ;
+: status-gadget ( toplevel -- child ) status-container 1 swap nth-gadget ;
+: add-status-control ( toplevel grid -- toplevel ) [ dup status-container ] [ <status-control> ] bi* add-gadget drop ;
+
+: minegrid-container ( toplevel -- child ) ;
+: minegrid-gadget ( toplevel -- child ) minegrid-container 1 swap nth-gadget ;
+: add-minegrid ( toplevel grid -- toplevel ) [ dup minegrid-container ] [ <minegrid-gadget> ] bi* add-gadget drop ;
+
+: add-game ( toplevel params -- )
+  unclip-last <random-grid> [ add-status-control ] [ add-minegrid ] bi
+  relayout-window ;
+: remove-game ( toplevel -- )
+  [ minegrid-gadget unparent ] [ status-gadget unparent ] bi  ;
+
+: new-game ( toplevel params -- )
+  [ drop remove-game ] [ add-game ] 2bi ;
 
 : add-fields ( parent default-params -- parent models )
   { "rows:" "cols:" "mines:" } swap [ <model> ] map [
     [ <model-field> swap <labeled-gadget> ] 2map add-gadgets
   ] keep ;
 
-:: add-minesweeper-menu ( default-params toplevel -- toplevel finish-model )
-  toplevel <shelf> default-params add-fields :> models
-  f <model> :> finish-model
-  <pile>
-    "New game" [
-      drop toplevel finish-model
-      models [ value>> string>number ] map new-game
-    ] <border-button> add-gadget
-    finish-model [let now :> previous! [ [ previous ] [ now dup previous! ] if ] ] <arrow> :> last-started
-    now <model> :> now-model
-    [ finish-model value>> [ now now-model set-model ] unless ] 1 seconds every drop
-    now-model last-started [ time- 1 seconds time+ [ (timestamp>hms) ] with-string-writer ]
-    <smart-arrow> <label-control> add-gadget
+CONSTANT: default-params { "5" "5" "5" } 
+: models>values ( models -- values ) [ value>> string>number ] map ;
+:: add-minesweeper-menu ( toplevel -- toplevel )
+  toplevel
+  <shelf>
+    <shelf> default-params add-fields :> models add-gadget
+    <pile>
+      "New game" [
+        drop toplevel 
+        models models>values new-game
+      ] <border-button> add-gadget
+!    finish-model [let now :> previous! [ [ previous ] [ now dup previous! ] if ] ] <arrow> :> last-started
+!    now <model> :> now-model
+!    [ finish-model value>> [ now now-model set-model ] unless ] 1 seconds every drop
+!    now-model last-started [ time- 1 seconds time+ [ (timestamp>hms) ] with-string-writer ]
+!    <smart-arrow> <label-control> add-gadget
+    add-gadget
   add-gadget
-  add-gadget finish-model ;
-: <minesweeper-main> ( default-params -- gadget finish-model )
-  <pile> add-minesweeper-menu ;
+  [ models models>values add-game ] keep ;
+
+TUPLE: minesweeper-gadget < pack ;
+: <minesweeper-main> ( -- gadget )
+  \ minesweeper-gadget new vertical >>orientation add-minesweeper-menu ;
 : minesweeper-main ( -- )
-  { "5" "5" "5" }
-  [ <minesweeper-main> dupd ]
-  [ [ string>number ] map add-game ] bi
-  "minesweeper" open-window ;
+  <minesweeper-main> "Minesweeper" open-window ;
 
 MAIN: minesweeper-main

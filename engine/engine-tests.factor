@@ -1,8 +1,8 @@
 ! Copyright (C) 2012 Jon Harper.
 ! See http://factorcode.org/license.txt for BSD license.
 USING: accessors eval kernel literals math math.matrices
-minesweeper.engine prettyprint prettyprint.config sequences
-sorting tools.test ;
+minesweeper.engine models prettyprint prettyprint.config
+sequences sorting tools.test ;
 IN: minesweeper.engine.tests
 
 CONSTANT: m {
@@ -29,13 +29,12 @@ CONSTANT: empty-grid $[ { 3 3 } <empty-grid> ]
 
 
 <<
-: (test-grid) ( -- grid )
+: <test-grid> ( -- grid )
   { 3 3 } <empty-grid> [
-    [ [ { 1 1 } t ] dip <minecell> ]
-    [ cells>> { 1 1 } swap Mi,j! ] bi
+    cells>> { 1 1 } swap Mi,j t >>mined? drop
   ] keep ;
 >>
-CONSTANT: test-grid $[ (test-grid) ]
+CONSTANT: test-grid $[ <test-grid> ]
 
 { $[
   3 3 zero-matrix [ 2drop 1 ] mmap-index
@@ -46,22 +45,32 @@ CONSTANT: test-grid $[ (test-grid) ]
   3 3 zero-matrix [ 2drop f ] mmap-index [
     [ t { 0 0 } ] dip Mi,j!
   ] keep
-] } [ (test-grid) cells>> [ { 0 0 } swap Mi,j demine-cell ] [ [ drop selected>> value>> ] mmap-index ] bi ] unit-test
+] } [ <test-grid> cells>> [ { 0 0 } swap Mi,j demine-cell ] [ [ drop cleared?>> value>> ] mmap-index ] bi ] unit-test
 
 { $[
   3 3 zero-matrix [ 2drop f ] mmap-index [
     [ t { 1 1 } ] dip Mi,j!
   ] keep
-] } [ (test-grid) cells>> [ { 1 1 } swap Mi,j demine-cell ] [ [ drop selected>> value>> ] mmap-index ] bi ] unit-test
+] } [ <test-grid> cells>> [ { 1 1 } swap Mi,j demine-cell ] [ [ drop cleared?>> value>> ] mmap-index ] bi ] unit-test
 
 { $[
   3 3 zero-matrix [ 2drop t ] mmap-index
-] } [ { 3 3 } <empty-grid> cells>> [ { 0 0 } swap Mi,j demine-cell ] [ [ drop selected>> value>> ] mmap-index ] bi ] unit-test
+] } [ { 3 3 } <empty-grid> cells>> [ { 0 0 } swap Mi,j demine-cell ] [ [ drop cleared?>> value>> ] mmap-index ] bi ] unit-test
 
-{ f t } [ { 3 3 } <empty-grid> [ cells>> { 0 0 } swap Mi,j demine-cell ] [ finished? ] bi ] unit-test
-{ t t } [ (test-grid) [ cells>> { 1 1 } swap Mi,j demine-cell ] [ finished? ] bi ] unit-test
-{ f f } [ (test-grid) [ cells>> { 0 0 } swap Mi,j demine-cell ] [ finished? ] bi ] unit-test
+{ t t } [ { 3 3 } <empty-grid> dup finished?>> activate-model
+  [ cells>> { 0 0 } swap Mi,j demine-cell ]
+  [ [ won?>> ] [ finished?>> value>> ] bi ] bi
+] unit-test
+{ f t } [ <test-grid> dup finished?>> activate-model 
+  [ cells>> { 1 1 } swap Mi,j demine-cell ]
+  [ [ won?>> ] [ finished?>> value>> ] bi ] bi
+] unit-test
+{ f } [ <test-grid> dup finished?>> activate-model
+  [ cells>> { 0 0 } swap Mi,j demine-cell ]
+  [ finished?>> value>> ] bi
+] unit-test
 
 { 3 } [ { 3 3 } 3 <random-grid> cells>> concat [ mined?>> ] count ] unit-test
 { 5 } [ { 5 5 } 5 <random-grid> cells>> concat [ mined?>> ] count ] unit-test
 { t } [ { 1 1 } 1 <random-grid> cells>> concat first mined?>> ] unit-test
+
