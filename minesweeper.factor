@@ -20,6 +20,8 @@ CONSTANT: number-colors {
 TUPLE: fancy-label-control < label ;
 : <fancy-label-control> ( model -- label )
   "" fancy-label-control new-label swap >>model ;
+M: fancy-label-control model-changed
+  swap value>> [ first >>string ] [ second >>font ] bi relayout ;
 
 : base-font ( font -- font )
   t >>bold?  T{ rgba f 1 0 0 0 } font-with-background ;
@@ -40,8 +42,6 @@ TUPLE: fancy-label-control < label ;
     [ base-font ]
   } cond ;
 
-M: fancy-label-control model-changed
-  swap value>> [ first >>string ] [ second >>font ] bi relayout ;
 : neighbours-string ( n -- string )
    [ "" ] [ number>string ] if-zero ;
 :: minecell-label ( cleared? marked? mined? neighbours -- str )
