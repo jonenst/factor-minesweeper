@@ -55,10 +55,23 @@ M: fancy-label-control model-changed
   [ [ minesweeper-font ] <smart-arrow> ] } 4 ncleave
   2array <product> <fancy-label-control> ;
 
-TUPLE: minecell-gadget < checkbox minecell ;
+TUPLE: minecell-gadget < checkbox minecell toplevel ;
+TUPLE: minesweeper-gadget < pack timer now ;
 
-: minecell-leftclicked ( gadget -- ) minecell>> demine-cell ;
-: minecell-rightclicked ( gadget -- ) minecell>> marked?>> toggle-model ;
+: updater ( model -- timer )
+  [ now swap set-model ] curry 1 seconds every ;
+: ?start-now-model ( toplevel -- )
+  dup timer>> [ drop ] [ dup now>> updater >>timer drop ] if ;
+: stop-now-model ( toplevel -- )
+  [ timer>> [ stop-timer ] when* ] [ f >>timer drop ] bi ;
+: ?stop-now-model ( toplevel grid -- )
+  finished?>> value>> [ stop-now-model ] [ drop ] if ;
+: start/stop-now-model ( gadget -- )
+  [ toplevel>> ] [ minecell>> grid>> ] bi
+  [ drop ?start-now-model ] [ ?stop-now-model ] 2bi ;
+: click ( gadget quot -- ) [ start/stop-now-model ] bi ; inline
+: minecell-leftclicked ( gadget -- ) [ minecell>> demine-cell ] click ;
+: minecell-rightclicked ( gadget -- ) [ minecell>> toggle-mark ] click ;
 
 : minesweeper-image-pen ( string -- path )
   "vocab:minesweeper/" prepend-path ".png" append <image-name> <image-pen> ;
@@ -67,10 +80,10 @@ TUPLE: minecell-gadget < checkbox minecell ;
   "cell-pressed" minesweeper-image-pen dup dup <button-pen> >>interior
   dup dup interior>> pen-pref-dim >>min-dim { 10 0 } >>size ;
 
-: <minecell-gadget> ( minecell -- gadget )
+: <minecell-gadget> ( toplevel minecell -- gadget )
   [ ] [ cleared?>> ] [ <minecell-label> ] tri
   [ minecell-leftclicked ] minecell-gadget new-button
-  swap >>model swap >>minecell
+  swap >>model swap >>minecell swap >>toplevel
   minecell-theme ;
 
 \ minecell-gadget {
@@ -78,30 +91,46 @@ TUPLE: minecell-gadget < checkbox minecell ;
   { T{ button-up f f 3 } [ minecell-rightclicked ] }
 } set-gestures
 
-: add-row ( pile cells -- pile )
-  <shelf> [ <minecell-gadget> add-gadget ] reduce add-gadget ;
-: add-rows ( cells -- gadget )
-  <pile> [ add-row ] reduce ;
+: add-row ( pile toplevel cells -- pile )
+  swap <shelf> [ <minecell-gadget> add-gadget ] with reduce
+  add-gadget ;
+: add-rows ( toplevel cells -- gadget )
+  swap <pile> [ add-row ] with reduce ;
 
-: <minegrid-gadget> ( grid -- gadget )
+: <minegrid-gadget> ( toplevel grid -- gadget )
   cells>> add-rows ;
 
-: status-str ( won? finished? -- str ) [ "Victory !" "BOOOOOM" ? ] [ drop "Playing" ] if ;
+: status-str ( won? started? finished? -- str ) [ drop "Victory !" "BOOOOOM" ? ] [ nip "Playing" "Ready..." ? ] if ;
 : <status-control> ( grid -- control )
-  dup finished?>> [ [ won?>> ] [ status-str ] bi* ] with <arrow> <label-control> ;
-: status-container ( toplevel -- child ) gadget-child 1 swap nth-gadget ;
-: status-gadget ( toplevel -- child ) status-container 1 swap nth-gadget ;
-: add-status-control ( toplevel grid -- toplevel ) [ dup status-container ] [ <status-control> ] bi* add-gadget drop ;
+  dup [ start>> ] [ finished?>> ] bi 2array <product>
+  [ [ won?>> ] [ first2 status-str ] bi* ] with <arrow> <label-control> ;
+
+: debug ( obj -- ) "jon-stream" get-global [ . ] with-output-stream ;
+: sanitize ( now start -- now' start' ) [ now or ] [ over or ] bi*  ;
+: elapsed-time-str ( now start -- str )
+  sanitize time- [ (timestamp>hms) ] with-string-writer ;
+: elapsed-time-label ( start-model now-model -- label )
+  [ elapsed-time-str ] <smart-arrow> <label-control> ;
+: <elapsed-time-control> ( toplevel grid -- control )
+  [ now>> ] [ start>> ] bi* elapsed-time-label ;
+: <info-control> ( toplevel grid -- control )
+  [ nip <status-control> ] [ <elapsed-time-control> ] 2bi
+  <pile> swap add-gadget swap add-gadget ;
+: info-container ( toplevel -- child ) gadget-child 1 swap nth-gadget ;
+: info-gadget ( toplevel -- child ) info-container 1 swap nth-gadget ;
+: add-info-control ( toplevel grid -- toplevel ) [ drop dup info-container ] [ <info-control> ] 2bi add-gadget drop ;
 
 : minegrid-container ( toplevel -- child ) ;
 : minegrid-gadget ( toplevel -- child ) minegrid-container 1 swap nth-gadget ;
-: add-minegrid ( toplevel grid -- toplevel ) [ dup minegrid-container ] [ <minegrid-gadget> ] bi* add-gadget drop ;
+: add-minegrid ( toplevel grid -- toplevel ) [ drop dup minegrid-container ] [ <minegrid-gadget> ] 2bi add-gadget drop ;
 
 : add-game ( toplevel params -- )
-  unclip-last <random-grid> [ add-status-control ] [ add-minegrid ] bi
+  unclip-last <random-grid> [ add-info-control ] [ add-minegrid ] bi
   relayout-window ;
 : remove-game ( toplevel -- )
-  [ minegrid-gadget unparent ] [ status-gadget unparent ] bi  ;
+  [ minegrid-gadget unparent ]
+  [ info-gadget unparent ]
+  [ stop-now-model ] tri  ;
 
 : new-game ( toplevel params -- )
   [ drop remove-game ] [ add-game ] 2bi ;
@@ -122,18 +151,14 @@ CONSTANT: default-params { "5" "5" "5" }
         drop toplevel
         models models>values new-game
       ] <border-button> add-gadget
-!    finish-model [let now :> previous! [ [ previous ] [ now dup previous! ] if ] ] <arrow> :> last-started
-!    now <model> :> now-model
-!    [ finish-model value>> [ now now-model set-model ] unless ] 1 seconds every drop
-!    now-model last-started [ time- 1 seconds time+ [ (timestamp>hms) ] with-string-writer ]
-!    <smart-arrow> <label-control> add-gadget
     add-gadget
   add-gadget
   [ models models>values add-game ] keep ;
 
-TUPLE: minesweeper-gadget < pack ;
+M: minesweeper-gadget ungraft* remove-game ;
+
 : <minesweeper-main> ( -- gadget )
-  \ minesweeper-gadget new vertical >>orientation add-minesweeper-menu ;
+  \ minesweeper-gadget new vertical >>orientation f <model> >>now add-minesweeper-menu ;
 : minesweeper-main ( -- )
   [ <minesweeper-main> "Minesweeper" open-window ] with-ui ;
 

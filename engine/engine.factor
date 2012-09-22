@@ -1,13 +1,14 @@
 ! Copyright (C) 2012 Jon Harper.
 ! See http://factorcode.org/license.txt for BSD license.
-USING: accessors arrays combinators.short-circuit fry kernel
-math math.order math.ranges math.vectors models models.arrow
-models.product random sequences sequences.extras
+USING: accessors arrays calendar combinators.short-circuit fry
+kernel math math.order math.ranges math.vectors models
+models.arrow models.product random sequences sequences.extras
 sequences.product ;
+FROM: models => change-model ;
 IN: minesweeper.engine
 
 TUPLE: minecell idx mined? grid cleared? marked? ;
-TUPLE: grid dim cells total-mines finished? won? ;
+TUPLE: grid dim cells total-mines start finished? won? ;
 
 : cleared-all? ( cells -- ? )
   [ [ mined?>> not ] [ cleared?>> value>> not ] bi and ] none? ;
@@ -18,6 +19,10 @@ TUPLE: grid dim cells total-mines finished? won? ;
   [ [ mined?>> ] [ cleared?>> value>> ] bi and ] any? ;
 : finished? ( grid -- won? finished? )
   cells>> concat [ won? ] [ lost? ] bi [ drop ] [ or ] 2bi ;
+
+: save-grid-start ( minecell -- )
+  grid>> start>> dup value>> [ drop ] [ now swap set-model ] if ;
+: click ( mincell quot -- ) [ save-grid-start ] bi ; inline
 
 : <matrix> ( dim n -- matrix )
   [ first2 ] [ '[ _ [ _ ] replicate ] replicate ] bi* ;
@@ -48,15 +53,15 @@ TUPLE: grid dim cells total-mines finished? won? ;
   [ dim>> neighbours ] [ nip cells>> ] 2bi
   Mi,js [ mined?>> ] count ;
 
-DEFER: demine-cell
+DEFER: (demine-cell)
 : ?demine-neighbours ( minecell -- )
   dup [ neighbour-mines zero? ] [ mined?>> not ] bi and [
     [ [ idx>> ] [ grid>> dim>> ] bi neighbours ]
     [ grid>> cells>> ] bi [
-      Mi,j demine-cell
+      Mi,j (demine-cell)
     ] curry each
   ] [ drop ] if ;
-: demine-cell ( minecell -- )
+: (demine-cell) ( minecell -- )
   dup cleared?>> value>> [ drop ] [
     [ cleared?>> t swap set-model ]
     [ ?demine-neighbours ] bi
@@ -74,10 +79,16 @@ DEFER: demine-cell
 : <finish-arrow> ( grid -- arrow )
   [ cells>> <finish-in-model> ]
   [ [ nip check-finished ] curry ] bi <arrow> ;
+
+: demine-cell ( minecell -- ) [ (demine-cell) ] click ;
+: toggle-model ( model -- ) [ not ] change-model ;
+: toggle-mark ( minecell -- ) [ marked?>> toggle-model ] click ;
+
 : <grid> ( dim mines quot: ( dim mines grid -- cells ) -- grid )
   [ \ grid new ] dip
   [ swap >>total-mines swap >>dim swap >>cells ] 3bi
-  dup <finish-arrow> >>finished? ; inline
+  dup <finish-arrow> >>finished?
+  f <model> >>start ; inline
 
 : all-indices ( dim -- indices ) [ ] <matrix*> concat ;
 : random-indices ( dim mines -- indices )
