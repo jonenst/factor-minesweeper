@@ -51,10 +51,14 @@ TUPLE: grid dim cells total-mines start finished? won? ;
   [ 1 - 0 swap between? ] 2all? ;
 : neighbours ( idx dim -- seq )
   [ 1 all-neighbours ] [ [ in-range? ] curry filter ] bi* ;
-: neighbour-mines ( minecell -- n )
-  [ idx>> ] [ grid>> ] bi
-  [ dim>> neighbours ] [ nip cells>> ] 2bi
-  Mi,js [ mined?>> ] count ;
+: (neighbour-cells) ( idx grid -- cells )
+  [ dim>> neighbours ] [ nip cells>> ] 2bi Mi,js ;
+: neighbour-cells ( cell -- cells )
+  [ idx>> ] [ grid>> ] bi (neighbour-cells) ;
+: mines-count ( cells -- n ) [ mined?>> ] count ;
+: marked-count ( cells -- n ) [ [ marked?>> value>> ] [ cleared?>> value>> not ] bi and ] count ;
+: neighbour-mines ( minecell -- n ) neighbour-cells mines-count ;
+: neighbour-marked ( minecell -- n ) neighbour-cells marked-count  ;
 
 DEFER: (demine-cell)
 : ?demine-neighbours ( minecell -- )
@@ -69,11 +73,6 @@ DEFER: (demine-cell)
     [ cleared?>> t swap set-model ]
     [ ?demine-neighbours ] bi
   ] if ;
-
-: (neighbour-cells) ( grid idx -- cells )
-  [ [ cells>> ] [ dim>> ] bi ] [ swap neighbours ] bi* swap Mi,js ;
-: neighbour-cells ( cell -- cells )
-  [ grid>> ] [ idx>> ] bi (neighbour-cells) ;
 
 : obvious? ( cells -- ? ) [ cleared?>> value>> ] all? ;
 : mark ( cell -- ) marked?>> t swap set-model ;
@@ -111,6 +110,12 @@ DEFER: (demine-cell)
 : demine-cell ( minecell -- ) [ demine-mark ] click ;
 : toggle-model ( model -- ) [ not ] change-model ;
 : toggle-mark ( minecell -- ) [ marked?>> toggle-model ] click ;
+: ?expand-cell ( minecell -- )
+  dup cleared?>> value>> [
+    neighbour-cells dup [ mines-count ] [ marked-count ] bi = [
+      [ marked?>> value>> not ] filter [ demine-cell ] each
+    ] [ drop ] if
+  ] [ drop ] if ;
 
 : <grid> ( dim mines quot: ( dim mines grid -- cells ) -- grid )
   [ \ grid new ] dip

@@ -72,6 +72,7 @@ TUPLE: minesweeper-gadget < pack timer now ;
 : click ( gadget quot -- ) [ start/stop-now-model ] bi ; inline
 : minecell-leftclicked ( gadget -- ) [ minecell>> demine-cell ] click ;
 : minecell-rightclicked ( gadget -- ) [ minecell>> toggle-mark ] click ;
+: minecell-bothclicked ( gadget -- ) [ minecell>> ?expand-cell ] click ;
 
 : minesweeper-image-pen ( string -- path )
   "vocab:minesweeper/" prepend-path ".png" append <image-name> <image-pen> ;
@@ -87,6 +88,7 @@ TUPLE: minesweeper-gadget < pack timer now ;
   minecell-theme ;
 
 \ minecell-gadget {
+  { T{ button-up f { S+ } } [ minecell-bothclicked ] }
   { T{ button-down f f 3 } [ drop ] }
   { T{ button-up f f 3 } [ minecell-rightclicked ] }
 } set-gestures
