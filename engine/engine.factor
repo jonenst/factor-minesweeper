@@ -5,6 +5,7 @@ kernel math math.order math.ranges math.vectors models
 models.arrow models.product random sequences sequences.extras
 sequences.product ;
 FROM: models => change-model ;
+FROM: sequences => product ;
 IN: minesweeper.engine
 
 TUPLE: minecell idx mined? grid cleared? marked? ;
@@ -74,11 +75,19 @@ DEFER: (demine-cell)
 : neighbour-cells ( cell -- cells )
   [ grid>> ] [ idx>> ] bi (neighbour-cells) ;
 
-: obvious? ( cells -- ? )
-  { [ [ cleared?>> value>> ] all? ] [ [ neighbour-mines 1 = ] all? ] } 1&& ;
+: obvious? ( cells -- ? ) [ cleared?>> value>> ] all? ;
+: mark ( cell -- ) marked?>> t swap set-model ;
 : ?mark-obvious ( cell -- )
-  dup neighbour-cells obvious? [ marked?>> t swap set-model ] [ drop ] if ;
-
+  dup neighbour-cells obvious? [ mark ] [ drop ] if ;
+: cleared-count ( grid -- n )
+  cells>> concat [ cleared?>> value>> ] count ;
+: cleared-total ( grid -- n )
+  [ dim>> product ] [ total-mines>> ] bi - ;
+: mark-all ( grid -- )
+  cells>> [ mark ] meach ;
+: ?mark-remaining ( cell -- )
+  grid>> dup [ cleared-count ] [ cleared-total ] bi =
+  [ mark-all ] [ drop ] if ;
 : mark-obvious-cells ( minecell -- )
   grid>> cells>> [ ?mark-obvious ] meach ;
 
@@ -95,7 +104,11 @@ DEFER: (demine-cell)
   [ cells>> <finish-in-model> ]
   [ [ nip check-finished ] curry ] bi <arrow> ;
 
-: demine-cell ( minecell -- ) [ [ (demine-cell) ] [ mark-obvious-cells ] bi ] click ;
+: demine-mark ( minecell -- )
+  [ (demine-cell) ]
+  [ mark-obvious-cells ]
+  [ ?mark-remaining ] tri ;
+: demine-cell ( minecell -- ) [ demine-mark ] click ;
 : toggle-model ( model -- ) [ not ] change-model ;
 : toggle-mark ( minecell -- ) [ marked?>> toggle-model ] click ;
 
