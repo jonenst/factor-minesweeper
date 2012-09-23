@@ -1,0 +1,37 @@
+commit 42d4f36ff257342a1267236053889b00b77e9d66
+Author: Jon Harper <jon.harper87@gmail.com>
+Date:   Sat Sep 8 14:33:22 2012 +0200
+
+    Add resize-window and relayout-window
+
+diff --git basis/ui/backend/gtk/gtk.factor basis/ui/backend/gtk/gtk.factor
+index 033a96a..78843b5 100644
+--- basis/ui/backend/gtk/gtk.factor
++++ basis/ui/backend/gtk/gtk.factor
+@@ -474,6 +474,8 @@ M: gtk-ui-backend (close-window) ( handle -- )
+     window>> [ gtk_widget_destroy ] [ unregister-window ] bi
+     event-loop? [ gtk_main_quit ] unless ;
+ 
++M: gtk-ui-backend resize-window [ handle>> window>> ] [ first2 ] bi* gtk_window_resize ;
++
+ M: gtk-ui-backend set-title
+     swap [ handle>> window>> ] [ utf8 string>alien ] bi*
+     gtk_window_set_title ;
+diff --git basis/ui/ui.factor basis/ui/ui.factor
+index 789ca71..ea344e0 100644
+--- basis/ui/ui.factor
++++ basis/ui/ui.factor
+@@ -214,6 +214,13 @@ M: object close-window
+     <flag> ui-notify-flag set-global
+ ] "ui" add-startup-hook
+ 
++HOOK: resize-window ui-backend ( world dim -- )
++M: object resize-window 2drop ;
++
++: relayout-window ( gadget -- )
++  [ relayout ]
++  [ find-world [ dup pref-dim resize-window ] when* ] bi ;
++
+ : with-ui ( quot: ( -- ) -- )
+     ui-running? [ call( -- ) ] [ '[ init-ui @ ] (with-ui) ] if ;
+ 
