@@ -74,3 +74,9 @@ CONSTANT: test-grid $[ <test-grid> ]
 { 5 } [ { 5 5 } 5 <random-grid> cells>> concat [ mined?>> ] count ] unit-test
 { t } [ { 1 1 } 1 <random-grid> cells>> concat first mined?>> ] unit-test
 
+{ f } [ <test-grid> cells>> [ { 0 0 } swap Mi,j demine-cell ] [ { 0 1 } swap Mi,j marked?>> value>> ] bi ] unit-test
+: (clear-cells) ( cells -- clear-cells )
+  [ drop dup mined?>> [ drop f ] when ] mmap-index concat sift ;
+: clear-cells ( cells -- )
+  (clear-cells) [ demine-cell ] each ;
+{ t } [ <test-grid> cells>> [ clear-cells ] [ { 1 1 } swap Mi,j marked?>> value>> ] bi ] unit-test

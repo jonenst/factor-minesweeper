@@ -32,6 +32,8 @@ TUPLE: grid dim cells total-mines start finished? won? ;
   [ Mi,j ] curry map ;
 : Mi,j! ( el idx M -- )
   [ first2 swap ] [ nth set-nth ] bi* ;
+: meach ( ... M quot: ( ... el -- ... ) -- ... )
+  [ each ] curry each ; inline
 : mmap-index ( ... M quot: ( ... el idx -- ... el ) -- ... M' )
   [ swap 2array ] prepose
   [ curry map-index ] curry map-index ; inline
@@ -67,6 +69,19 @@ DEFER: (demine-cell)
     [ ?demine-neighbours ] bi
   ] if ;
 
+: (neighbour-cells) ( grid idx -- cells )
+  [ [ cells>> ] [ dim>> ] bi ] [ swap neighbours ] bi* swap Mi,js ;
+: neighbour-cells ( cell -- cells )
+  [ grid>> ] [ idx>> ] bi (neighbour-cells) ;
+
+: obvious? ( cells -- ? )
+  { [ [ cleared?>> value>> ] all? ] [ [ neighbour-mines 1 = ] all? ] } 1&& ;
+: ?mark-obvious ( cell -- )
+  dup neighbour-cells obvious? [ marked?>> t swap set-model ] [ drop ] if ;
+
+: mark-obvious-cells ( minecell -- )
+  grid>> cells>> [ ?mark-obvious ] meach ;
+
 : <minecell> ( idx mined? grid -- minecell )
   f <model> f <model> \ minecell boa ;
 
@@ -80,7 +95,7 @@ DEFER: (demine-cell)
   [ cells>> <finish-in-model> ]
   [ [ nip check-finished ] curry ] bi <arrow> ;
 
-: demine-cell ( minecell -- ) [ (demine-cell) ] click ;
+: demine-cell ( minecell -- ) [ [ (demine-cell) ] [ mark-obvious-cells ] bi ] click ;
 : toggle-model ( model -- ) [ not ] change-model ;
 : toggle-mark ( minecell -- ) [ marked?>> toggle-model ] click ;
 
