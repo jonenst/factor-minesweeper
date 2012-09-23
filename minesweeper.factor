@@ -105,7 +105,6 @@ TUPLE: minesweeper-gadget < pack timer now ;
   dup [ start>> ] [ finished?>> ] bi 2array <product>
   [ [ won?>> ] [ first2 status-str ] bi* ] with <arrow> <label-control> ;
 
-: debug ( obj -- ) "jon-stream" get-global [ . ] with-output-stream ;
 : sanitize ( now start -- now' start' ) [ now or ] [ over or ] bi*  ;
 : elapsed-time-str ( now start -- str )
   sanitize time- [ (timestamp>hms) ] with-string-writer ;
