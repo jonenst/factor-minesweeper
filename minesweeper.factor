@@ -1,14 +1,14 @@
 ! Copyright (C) 2012 Jon Harper.
 ! See http://factorcode.org/license.txt for BSD license.
-USING: accessors arrays calendar calendar.format colors
-colors.constants combinators fonts generalizations grouping
-gtk.ffi io.pathnames io.streams.string kernel locals math
-math.order math.parser minesweeper.engine models models.arrow
-models.arrow.smart models.product sequences timers ui
-ui.gadgets ui.gadgets.buttons ui.gadgets.buttons.private
-ui.gadgets.editors ui.gadgets.labeled ui.gadgets.labels
-ui.gadgets.packs ui.gadgets.worlds ui.gestures ui.images
-ui.pens ui.pens.image formatting sequences.extras ui.commands ;
+USING: accessors arrays colors colors.constants combinators
+combinators.short-circuit fonts formatting generalizations
+io.pathnames io.streams.string kernel locals math math.order
+math.parser minesweeper.engine models models.arrow
+models.arrow.smart models.product namespaces sequences
+sequences.extras ui ui.commands ui.gadgets ui.gadgets.buttons
+ui.gadgets.buttons.private ui.gadgets.editors
+ui.gadgets.labeled ui.gadgets.labels ui.gadgets.packs
+ui.gestures ui.images ui.pens ui.pens.image ;
 FROM: models => change-model ;
 IN: minesweeper
 
@@ -59,9 +59,38 @@ M: fancy-label-control model-changed
 TUPLE: minecell-gadget < checkbox minecell toplevel ;
 TUPLE: minesweeper-gadget < pack current-grid ;
 
-: minecell-leftclicked ( gadget -- ) minecell>> demine-cell ;
-: minecell-rightclicked ( gadget -- ) minecell>> toggle-mark ;
-: minecell-bothclicked ( gadget -- ) minecell>> ?expand-cell ;
+: info-container ( toplevel -- child ) gadget-child 1 swap nth-gadget ;
+: info-gadget ( toplevel -- child ) info-container 1 swap nth-gadget ;
+: minegrid-container ( toplevel -- child ) ;
+: minegrid-gadget ( toplevel -- child ) minegrid-container 1 swap nth-gadget ;
+
+: neighbour-expanded-indices ( gadget -- indices )
+  minecell>> neighbour-cells
+  [ marked?>> value>> not ] filter
+  [ idx>> ] map ;
+: Mi,j-gadget ( {i,j} gadget -- child )
+  [ swap nth-gadget ] reduce ;
+: neighbour-expanded-buttons ( gadget -- buttons )
+  [ neighbour-expanded-indices ] [ toplevel>> minegrid-gadget ] bi
+  [ Mi,j-gadget ] curry map ;
+: neighbour-expanded-button-update ( gadget neighbour -- )
+  swap
+  { [ mouse-clicked? ] [ button-rollover? ] } 1&&
+  buttons-down? and
+  >>pressed?
+  relayout-1 ;
+: update-neighbours ( gadget -- )
+  dup neighbour-expanded-buttons [ neighbour-expanded-button-update ] with each ;
+
+: (minecell-midclicked) ( gadget -- ) minecell>> ?expand-cell ;
+: (minecell-leftclicked) ( gadget -- ) minecell>> demine-cell ;
+: (minecell-rightclicked) ( gadget -- ) minecell>> toggle-mark ;
+
+: minecell-midclicked ( gadget -- )
+  [ [ button-update ] [ update-neighbours ] bi ]
+  [ dup button-rollover? [ (minecell-midclicked) ] [ drop ] if ] bi ;
+: minecell-rightclicked ( gadget -- )
+  dup button-rollover? [ (minecell-rightclicked) ] [ drop ] if ;
 
 : minesweeper-image-pen ( string -- path )
   "vocab:minesweeper/" prepend-path ".png" append <image-name> <image-pen> ;
@@ -72,14 +101,25 @@ TUPLE: minesweeper-gadget < pack current-grid ;
 
 : <minecell-gadget> ( toplevel minecell -- gadget )
   [ ] [ cleared?>> ] [ <minecell-label> ] tri
-  [ minecell-leftclicked ] minecell-gadget new-button
+  [ (minecell-leftclicked) ] minecell-gadget new-button
   swap >>model swap >>minecell swap >>toplevel
   minecell-theme ;
 
+: midclicking? ( -- ? ) 2 hand-buttons get-global member? ;
+: update-midclick ( gadget -- )
+  midclicking? [
+    dup mouse-clicked? [
+      [ button-update ] [ update-neighbours ] bi
+    ] [ drop ] if
+  ] [ button-update ] if ;
+
 \ minecell-gadget {
-  { T{ button-up f { S+ } } [ minecell-bothclicked ] }
-  { T{ button-down f f 3 } [ drop ] }
+  { T{ button-up f f 2 } [ minecell-midclicked ] }
   { T{ button-up f f 3 } [ minecell-rightclicked ] }
+  { T{ button-down f f 3 } [ drop ] }
+  { T{ button-down f f 2 } [ update-neighbours ] }
+  { mouse-leave [ update-midclick ] }
+  { mouse-enter [ update-midclick ] }
 } set-gestures
 
 : add-row ( pile toplevel cells -- pile )
@@ -105,12 +145,8 @@ TUPLE: minesweeper-gadget < pack current-grid ;
 : <info-control> ( grid -- control )
   [ <status-control> ] [ <elapsed-time-control> ] bi
   <pile> swap add-gadget swap add-gadget ;
-: info-container ( toplevel -- child ) gadget-child 1 swap nth-gadget ;
-: info-gadget ( toplevel -- child ) info-container 1 swap nth-gadget ;
 : add-info-control ( toplevel grid -- toplevel ) [ dup info-container ] [ <info-control> ] bi* add-gadget drop ;
 
-: minegrid-container ( toplevel -- child ) ;
-: minegrid-gadget ( toplevel -- child ) minegrid-container 1 swap nth-gadget ;
 : add-minegrid ( toplevel grid -- toplevel ) [ drop dup minegrid-container ] [ <minegrid-gadget> ] 2bi add-gadget drop ;
 
 : add-game ( toplevel params -- )
