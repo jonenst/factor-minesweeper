@@ -57,23 +57,11 @@ M: fancy-label-control model-changed
   2array <product> <fancy-label-control> ;
 
 TUPLE: minecell-gadget < checkbox minecell toplevel ;
-TUPLE: minesweeper-gadget < pack timer duration ;
+TUPLE: minesweeper-gadget < pack current-grid ;
 
-: updater ( model -- timer )
-  [ [ 1 + ] change-model ] curry 1 seconds delayed-every ;
-: ?start-duration-model ( toplevel -- )
-  dup timer>> [ drop ] [ dup duration>> updater >>timer drop ] if ;
-: stop-duration-model ( toplevel -- )
-  [ timer>> [ stop-timer ] when* ] [ f >>timer drop ] bi ;
-: ?stop-duration-model ( toplevel grid -- )
-  finished?>> value>> [ stop-duration-model ] [ drop ] if ;
-: start/stop-duration-model ( gadget -- )
-  [ toplevel>> ] [ minecell>> grid>> ] bi
-  [ drop ?start-duration-model ] [ ?stop-duration-model ] 2bi ;
-: click ( gadget quot -- ) [ start/stop-duration-model ] bi ; inline
-: minecell-leftclicked ( gadget -- ) [ minecell>> demine-cell ] click ;
-: minecell-rightclicked ( gadget -- ) [ minecell>> toggle-mark ] click ;
-: minecell-bothclicked ( gadget -- ) [ minecell>> ?expand-cell ] click ;
+: minecell-leftclicked ( gadget -- ) minecell>> demine-cell ;
+: minecell-rightclicked ( gadget -- ) minecell>> toggle-mark ;
+: minecell-bothclicked ( gadget -- ) minecell>> ?expand-cell ;
 
 : minesweeper-image-pen ( string -- path )
   "vocab:minesweeper/" prepend-path ".png" append <image-name> <image-pen> ;
@@ -105,33 +93,33 @@ TUPLE: minesweeper-gadget < pack timer duration ;
 
 : status-str ( won? started? finished? -- str ) [ drop "Victory !" "BOOOOOM" ? ] [ nip "Playing" "Ready..." ? ] if ;
 : <status-control> ( grid -- control )
-  dup [ start>> ] [ finished?>> ] bi 2array <product>
+  dup [ started?>> ] [ finished?>> ] bi 2array <product>
   [ [ won?>> ] [ first2 status-str ] bi* ] with <arrow> <label-control> ;
 
 : elapsed-time-str ( seconds -- str )
   60 /mod [ 60 /mod ] dip [ "%02d:%02d:%02d" printf ] with-string-writer ;
 : elapsed-time-label ( duration-model -- label )
   [ elapsed-time-str ] <arrow> <label-control> ;
-: <elapsed-time-control> ( toplevel -- control )
-  duration>> [ 0 swap set-model ] [ elapsed-time-label ] bi ;
-: <info-control> ( toplevel grid -- control )
-  [ <elapsed-time-control> ] [ <status-control> ] bi*
+: <elapsed-time-control> ( grid -- control )
+  duration>> elapsed-time-label ;
+: <info-control> ( grid -- control )
+  [ <status-control> ] [ <elapsed-time-control> ] bi
   <pile> swap add-gadget swap add-gadget ;
 : info-container ( toplevel -- child ) gadget-child 1 swap nth-gadget ;
 : info-gadget ( toplevel -- child ) info-container 1 swap nth-gadget ;
-: add-info-control ( toplevel grid -- toplevel ) [ drop dup info-container ] [ <info-control> ] 2bi add-gadget drop ;
+: add-info-control ( toplevel grid -- toplevel ) [ dup info-container ] [ <info-control> ] bi* add-gadget drop ;
 
 : minegrid-container ( toplevel -- child ) ;
 : minegrid-gadget ( toplevel -- child ) minegrid-container 1 swap nth-gadget ;
 : add-minegrid ( toplevel grid -- toplevel ) [ drop dup minegrid-container ] [ <minegrid-gadget> ] 2bi add-gadget drop ;
 
 : add-game ( toplevel params -- )
-  unclip-last <random-grid> [ add-info-control ] [ add-minegrid ] bi
+  unclip-last <timed-random-grid> [ >>current-grid ] [ add-info-control ] [ add-minegrid ] tri
   relayout-window ;
 : remove-game ( toplevel -- )
   [ minegrid-gadget unparent ]
   [ info-gadget unparent ]
-  [ stop-duration-model ] tri  ;
+  [ current-grid>> stop-callbacks ] tri  ;
 
 : new-game ( toplevel params -- )
   [ drop remove-game ] [ add-game ] 2bi ;
@@ -159,7 +147,7 @@ CONSTANT: default-params { "5" "5" "5" }
 M: minesweeper-gadget ungraft* remove-game ;
 
 : <minesweeper-main> ( -- gadget )
-  \ minesweeper-gadget new vertical >>orientation 0 <model> >>duration add-minesweeper-menu ;
+  \ minesweeper-gadget new vertical >>orientation add-minesweeper-menu ;
 : minesweeper-main ( -- )
   [ <minesweeper-main> "Minesweeper" open-window ] with-ui ;
 
