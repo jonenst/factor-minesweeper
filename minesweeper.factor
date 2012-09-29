@@ -8,7 +8,8 @@ models.arrow.smart models.product sequences timers ui
 ui.gadgets ui.gadgets.buttons ui.gadgets.buttons.private
 ui.gadgets.editors ui.gadgets.labeled ui.gadgets.labels
 ui.gadgets.packs ui.gadgets.worlds ui.gestures ui.images
-ui.pens ui.pens.image ;
+ui.pens ui.pens.image formatting ;
+FROM: models => change-model ;
 IN: minesweeper
 
 CONSTANT: number-colors {
@@ -56,20 +57,20 @@ M: fancy-label-control model-changed
   2array <product> <fancy-label-control> ;
 
 TUPLE: minecell-gadget < checkbox minecell toplevel ;
-TUPLE: minesweeper-gadget < pack timer now ;
+TUPLE: minesweeper-gadget < pack timer duration ;
 
 : updater ( model -- timer )
-  [ now swap set-model ] curry 1 seconds every ;
-: ?start-now-model ( toplevel -- )
-  dup timer>> [ drop ] [ dup now>> updater >>timer drop ] if ;
-: stop-now-model ( toplevel -- )
+  [ [ 1 + ] change-model ] curry 1 seconds delayed-every ;
+: ?start-duration-model ( toplevel -- )
+  dup timer>> [ drop ] [ dup duration>> updater >>timer drop ] if ;
+: stop-duration-model ( toplevel -- )
   [ timer>> [ stop-timer ] when* ] [ f >>timer drop ] bi ;
-: ?stop-now-model ( toplevel grid -- )
-  finished?>> value>> [ stop-now-model ] [ drop ] if ;
-: start/stop-now-model ( gadget -- )
+: ?stop-duration-model ( toplevel grid -- )
+  finished?>> value>> [ stop-duration-model ] [ drop ] if ;
+: start/stop-duration-model ( gadget -- )
   [ toplevel>> ] [ minecell>> grid>> ] bi
-  [ drop ?start-now-model ] [ ?stop-now-model ] 2bi ;
-: click ( gadget quot -- ) [ start/stop-now-model ] bi ; inline
+  [ drop ?start-duration-model ] [ ?stop-duration-model ] 2bi ;
+: click ( gadget quot -- ) [ start/stop-duration-model ] bi ; inline
 : minecell-leftclicked ( gadget -- ) [ minecell>> demine-cell ] click ;
 : minecell-rightclicked ( gadget -- ) [ minecell>> toggle-mark ] click ;
 : minecell-bothclicked ( gadget -- ) [ minecell>> ?expand-cell ] click ;
@@ -107,15 +108,14 @@ TUPLE: minesweeper-gadget < pack timer now ;
   dup [ start>> ] [ finished?>> ] bi 2array <product>
   [ [ won?>> ] [ first2 status-str ] bi* ] with <arrow> <label-control> ;
 
-: sanitize ( now start -- now' start' ) [ now or ] [ over or ] bi*  ;
-: elapsed-time-str ( now start -- str )
-  sanitize time- [ (timestamp>hms) ] with-string-writer ;
-: elapsed-time-label ( start-model now-model -- label )
-  [ elapsed-time-str ] <smart-arrow> <label-control> ;
-: <elapsed-time-control> ( toplevel grid -- control )
-  [ now>> ] [ start>> ] bi* elapsed-time-label ;
+: elapsed-time-str ( seconds -- str )
+  60 /mod [ 60 /mod ] dip [ "%02d:%02d:%02d" printf ] with-string-writer ;
+: elapsed-time-label ( duration-model -- label )
+  [ elapsed-time-str ] <arrow> <label-control> ;
+: <elapsed-time-control> ( toplevel -- control )
+  duration>> [ 0 swap set-model ] [ elapsed-time-label ] bi ;
 : <info-control> ( toplevel grid -- control )
-  [ nip <status-control> ] [ <elapsed-time-control> ] 2bi
+  [ <elapsed-time-control> ] [ <status-control> ] bi*
   <pile> swap add-gadget swap add-gadget ;
 : info-container ( toplevel -- child ) gadget-child 1 swap nth-gadget ;
 : info-gadget ( toplevel -- child ) info-container 1 swap nth-gadget ;
@@ -131,7 +131,7 @@ TUPLE: minesweeper-gadget < pack timer now ;
 : remove-game ( toplevel -- )
   [ minegrid-gadget unparent ]
   [ info-gadget unparent ]
-  [ stop-now-model ] tri  ;
+  [ stop-duration-model ] tri  ;
 
 : new-game ( toplevel params -- )
   [ drop remove-game ] [ add-game ] 2bi ;
@@ -159,7 +159,7 @@ CONSTANT: default-params { "5" "5" "5" }
 M: minesweeper-gadget ungraft* remove-game ;
 
 : <minesweeper-main> ( -- gadget )
-  \ minesweeper-gadget new vertical >>orientation f <model> >>now add-minesweeper-menu ;
+  \ minesweeper-gadget new vertical >>orientation 0 <model> >>duration add-minesweeper-menu ;
 : minesweeper-main ( -- )
   [ <minesweeper-main> "Minesweeper" open-window ] with-ui ;
 
