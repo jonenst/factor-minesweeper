@@ -8,7 +8,7 @@ models.arrow.smart models.product sequences timers ui
 ui.gadgets ui.gadgets.buttons ui.gadgets.buttons.private
 ui.gadgets.editors ui.gadgets.labeled ui.gadgets.labels
 ui.gadgets.packs ui.gadgets.worlds ui.gestures ui.images
-ui.pens ui.pens.image formatting ;
+ui.pens ui.pens.image formatting sequences.extras ui.commands ;
 FROM: models => change-model ;
 IN: minesweeper
 
@@ -124,9 +124,33 @@ TUPLE: minesweeper-gadget < pack current-grid ;
 : new-game ( toplevel params -- )
   [ drop remove-game ] [ add-game ] 2bi ;
 
+: find-children ( gadget quot: ( child -- ? ) -- children )
+  [ dupd call [ drop f ] unless ]
+  [ [ children>> ] dip [ find-children ] curry map concat ] 2bi
+  swap prefix sift ; inline recursive
+
+TUPLE: tabbed-model-field < model-field prev next ;
+: <tabbed-model-field> ( model -- gadget )
+  tabbed-model-field new-field swap >>field-model ;
+
+: com-next ( gadget -- ) next>> editor>> request-focus ;
+: com-prev ( gadget -- ) prev>> editor>> request-focus ;
+\ tabbed-model-field "editing" f {
+  { T{ key-down f f "TAB" } com-next }
+  { T{ key-down f { S+ } "TAB" } com-prev }
+} define-command-map
+
+: link-tabbed-gadget ( prev cur next -- ) >>next prev<< ;
+: link-tabbed-gadgets ( tabbed-gadgets -- )
+  [ dup length 1 - 0 max rotate ] [ ] [ dup length 1 - 0 1 clamp rotate ] tri
+  [ link-tabbed-gadget ] 3each ;
+: link-all-tabbed-gadgets ( gadget -- )
+  [ tabbed-model-field? ] find-children link-tabbed-gadgets ;
+
 : add-fields ( parent default-params -- parent models )
-  { "rows:" "cols:" "mines:" } swap [ <model> ] map [
-    [ <model-field> swap <labeled-gadget> ] 2map add-gadgets
+  { "rows" "cols" "mines" } swap [ <model> ] map [
+    [ <tabbed-model-field> swap <labeled-gadget> ] 2map add-gadgets
+    dup link-all-tabbed-gadgets
   ] keep ;
 
 CONSTANT: default-params { "5" "5" "5" }
