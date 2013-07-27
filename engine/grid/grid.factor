@@ -6,6 +6,7 @@ minesweeper.engine minesweeper.matrix-utils models models.arrow
 models.product random sequences ;
 IN: minesweeper.engine.grid
 
+<PRIVATE
 : <cells-model> ( cells -- model )
   cells>> concat [ cleared?>> ] [ marked?>> ] [ map <product> ] bi-curry@ bi 2array <product> ;
 
@@ -15,7 +16,7 @@ IN: minesweeper.engine.grid
   [ nip check-finished ] curry <arrow> ;
 : <started-arrow> ( cells-model grid -- arrow )
   [ nip cells>> concat [ cleared?>> value>> ] any? ] curry <arrow> ;
-
+PRIVATE>
 
 : new-grid ( dim mines quot: ( dim mines grid -- cells ) class -- grid )
   new swap
@@ -25,6 +26,7 @@ IN: minesweeper.engine.grid
     [ <finish-arrow> >>finished? ]
     [ <started-arrow> >>started? ] 2bi ; inline
 
+<PRIVATE
 : all-indices ( dim -- indices ) [ ] <matrix*> concat ;
 : random-indices ( dim mines -- indices )
   [ drop all-indices ] [ nip sample ] 2bi ;
@@ -34,6 +36,8 @@ IN: minesweeper.engine.grid
   [ random-matrix ] [
     '[ swap _ <minecell> ] mmap-index
   ] bi* ;
+PRIVATE>
+
 : new-random-grid ( dim mines class -- grid )
   [ random-cells ] swap new-grid ; inline
 : new-empty-grid ( dim class -- grid )

@@ -5,6 +5,7 @@ math.vectors minesweeper.matrix-utils sequences
 sequences.product minesweeper.engine.grid ;
 IN: minesweeper.engine.neighbours
 
+<PRIVATE
 : (all-neighbours) ( idx n -- seq )
  [ neg ] keep [a,b] dup 2array [ v+ ] with product-map ;
 : all-neighbours ( idx n -- seq )
@@ -15,5 +16,7 @@ IN: minesweeper.engine.neighbours
   [ 1 all-neighbours ] [ [ in-range? ] curry filter ] bi* ;
 : (neighbour-cells) ( idx grid -- cells )
   [ dim>> neighbours ] [ nip cells>> ] 2bi Mi,js ;
+PRIVATE>
+
 : neighbour-cells ( cell -- cells )
   [ idx>> ] [ grid>> ] bi (neighbour-cells) ;
