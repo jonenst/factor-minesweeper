@@ -29,7 +29,7 @@ PRIVATE>
 <PRIVATE
 : all-indices ( dim -- indices ) [ ] <matrix*> concat ;
 : random-indices ( dim mines -- indices )
-  [ drop all-indices ] [ nip sample ] 2bi ;
+  [ all-indices ] [ sample ] bi* ;
 : random-matrix ( dim mines -- matrix )
   dupd random-indices [ member? ] curry <matrix*> ;
 : random-cells ( dim mines grid -- cells )
