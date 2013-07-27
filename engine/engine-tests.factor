@@ -28,13 +28,11 @@ CONSTANT: empty-grid $[ { 3 3 } <empty-grid> ]
 { $[ 3 3 zero-matrix ] } [ empty-grid cells>> [ drop neighbour-mines ] mmap-index ] unit-test
 
 
-<<
 : <test-grid> ( -- grid )
   { 3 3 } <empty-grid> [
-    cells>> { 1 1 } swap Mi,j t >>mined? drop
+    cells>> { 1 1 } swap Mi,j mined?>> t swap set-model
   ] keep ;
->>
-CONSTANT: test-grid $[ <test-grid> ]
+CONSTANT: test-grid $ <test-grid>
 
 { $[
   3 3 zero-matrix [ 2drop 1 ] mmap-index
@@ -70,13 +68,12 @@ CONSTANT: test-grid $[ <test-grid> ]
   [ finished?>> value>> ] bi
 ] unit-test
 
-{ 3 } [ { 3 3 } 3 <random-grid> cells>> concat [ mined?>> ] count ] unit-test
-{ 5 } [ { 5 5 } 5 <random-grid> cells>> concat [ mined?>> ] count ] unit-test
-{ t } [ { 1 1 } 1 <random-grid> cells>> concat first mined?>> ] unit-test
+{ 3 } [ { 3 3 } 3 <random-grid> cells>> concat [ first demine-cell ] [ [ mined?>> value>> ] count ] bi ] unit-test
+{ 5 } [ { 5 5 } 5 <random-grid> cells>> concat [ first demine-cell ] [ [ mined?>> value>> ] count ] bi ] unit-test
 
 { f } [ <test-grid> cells>> [ { 0 0 } swap Mi,j demine-cell ] [ { 0 1 } swap Mi,j marked?>> value>> ] bi ] unit-test
 : (clear-cells) ( cells -- clear-cells )
-  [ drop dup mined?>> [ drop f ] when ] mmap-index concat sift ;
+  [ drop dup mined?>> value>> [ drop f ] when ] mmap-index concat sift ;
 : clear-cells ( cells -- )
   (clear-cells) [ demine-cell ] each ;
 { t } [ <test-grid> cells>> [ clear-cells ] [ { 1 1 } swap Mi,j marked?>> value>> ] bi ] unit-test

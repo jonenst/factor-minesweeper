@@ -1,23 +1,25 @@
 ! Copyright (C) 2012 Jon Harper.
 ! See http://factorcode.org/license.txt for BSD license.
-USING: accessors arrays calendar combinators.short-circuit
+USING: accessors arrays calendar combinators
+combinators.short-circuit
 compiler.cfg.linear-scan.allocation.state fry kernel math
 math.order math.ranges math.vectors
-minesweeper.engine.neighbours minesweeper.matrix-utils models
-models.arrow models.product random sequences sequences.extras
-sequences.product timers ;
+minesweeper.engine.neighbours
+minesweeper.engine.neighbours.private minesweeper.matrix-utils
+models models.arrow models.product random sequences
+sequences.extras sequences.product timers ;
 FROM: models => change-model ;
 FROM: sequences => product ;
 IN: minesweeper.engine
 
 <PRIVATE
-: mines-count ( cells -- n ) [ mined?>> ] count ;
+: mines-count ( cells -- n ) [ mined?>> value>> ] count ;
 : marked-count ( cells -- n ) [ [ marked?>> value>> ] [ cleared?>> value>> not ] bi and ] count ;
 : neighbour-mines ( minecell -- n ) neighbour-cells mines-count ;
 
 DEFER: (demine-cell)
 : ?demine-neighbours ( minecell -- )
-  dup [ neighbour-mines zero? ] [ mined?>> not ] bi and [
+  dup [ neighbour-mines zero? ] [ mined?>> value>> not ] bi and [
     [ [ idx>> ] [ grid>> dim>> ] bi neighbours ]
     [ grid>> cells>> ] bi [
       Mi,j (demine-cell)
@@ -52,8 +54,19 @@ PRIVATE>
   [ (demine-cell) ]
   [ mark-obvious-cells ]
   [ ?mark-remaining ] tri ;
+
+: add-mines ( indices cells -- ) [ Mi,j mined?>> t swap set-model ] curry each ;
+: init-mines ( minecell -- )
+  [ idx>> ] [ grid>> {
+    [ dim>> ]
+    [ total-mines>> ]
+    [ init-mines-quot>> ]
+    [ cells>> ]
+   } cleave ] bi [ call( {i,j} dim mines -- indices ) ] [ add-mines ] bi* ;
+: ?init-mines ( minecell -- )
+  dup grid>> started?>> value>> [ drop ] [ init-mines ] if ;
 PRIVATE>
-: demine-cell ( minecell -- ) demine-mark ;
+: demine-cell ( minecell -- ) [ ?init-mines ] [ demine-mark ] bi ;
 
 <PRIVATE
 : toggle-model ( model -- ) [ not ] change-model ;

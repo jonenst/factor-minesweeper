@@ -6,12 +6,12 @@ IN: minesweeper.engine.finish
 
 <PRIVATE
 : cleared-all? ( cells -- ? )
-  [ [ mined?>> not ] [ cleared?>> value>> not ] bi and ] none? ;
+  [ [ mined?>> value>> not ] [ cleared?>> value>> not ] bi and ] none? ;
 : marked-all? ( cells -- ? )
-  [ [ mined?>> ] [ marked?>> value>> not ] bi and ] none? ;
+  [ [ mined?>> value>> ] [ marked?>> value>> not ] bi and ] none? ;
 : won? ( seq -- ? ) { [ cleared-all? ] [ marked-all? ] } 1&& ;
-: lost? ( grid -- ? )
-  [ [ mined?>> ] [ cleared?>> value>> ] bi and ] any? ;
+: lost? ( cells -- ? )
+  [ [ mined?>> value>> ] [ cleared?>> value>> ] bi and ] any? ;
 PRIVATE>
 
 : finished? ( grid -- won? finished? )

@@ -4,8 +4,8 @@ USING: kernel models ;
 IN: minesweeper.engine.types
 
 TUPLE: minecell idx mined? grid cleared? marked? ;
-: <minecell> ( idx mined? grid -- minecell )
-  f <model> f <model> \ minecell boa ;
+: <minecell> ( idx grid -- minecell )
+  f <model> swap f <model> f <model> \ minecell boa ;
 
-TUPLE: grid dim cells total-mines started? finished? won? ;
+TUPLE: grid dim cells total-mines started? finished? won? init-mines-quot ;
 

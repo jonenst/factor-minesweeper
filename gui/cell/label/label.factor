@@ -18,9 +18,11 @@ M: fancy-label-control model-changed
 :: minecell-label ( cleared? marked? mined? neighbours -- str )
   cleared? [ mined? BOOM neighbours neighbours-string ? ]
   [ marked? MARK "" ? ] if ;
+: <neighbour-mines-model> ( minecell -- model )
+  neighbour-cells [ mined?>> ] map <product> [ [ ] count ] <arrow> ;
 : <minecell-label> ( minecell -- label )
   { [ cleared?>> ] [ marked?>> ]
-    [ mined?>> <model> ] [ neighbour-mines <model> ]
+    [ mined?>> ] [ <neighbour-mines-model> ]
   } cleave
   { [ [ minecell-label ] <smart-arrow> ]
   [ [ minesweeper-font ] <smart-arrow> ] } 4 ncleave

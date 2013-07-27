@@ -16,10 +16,13 @@ IN: minesweeper.engine.grid
   [ nip check-finished ] curry <arrow> ;
 : <started-arrow> ( cells-model grid -- arrow )
   [ nip cells>> concat [ cleared?>> value>> ] any? ] curry <arrow> ;
+: <cell-matrix> ( dim grid -- cells )
+  [ <minecell> ] curry <matrix*> ;
 PRIVATE>
 
-: new-grid ( dim mines quot: ( dim mines grid -- cells ) class -- grid )
-  new swap
+: new-grid ( dim mines quot: ( {i,j} dim mines -- indices ) class -- grid )
+  new swap >>init-mines-quot
+  [ nip <cell-matrix> ]
   [ swap >>total-mines swap >>dim swap >>cells ] 3bi
   dup
     [ <cells-model> ] keep
@@ -27,18 +30,14 @@ PRIVATE>
     [ <started-arrow> >>started? ] 2bi ; inline
 
 <PRIVATE
-: all-indices ( dim -- indices ) [ ] <matrix*> concat ;
-: random-indices ( dim mines -- indices )
+: all-indices ( {i,j} dim -- indices ) [ ] <matrix*> concat remove ;
+: random-indices ( {i,j} dim mines -- indices )
   [ all-indices ] [ sample ] bi* ;
-: random-matrix ( dim mines -- matrix )
-  dupd random-indices [ member? ] curry <matrix*> ;
-: random-cells ( dim mines grid -- cells )
-  [ random-matrix ] [
-    '[ swap _ <minecell> ] mmap-index
-  ] bi* ;
 PRIVATE>
 
 : new-random-grid ( dim mines class -- grid )
-  [ random-cells ] swap new-grid ; inline
+  [ random-indices ] swap new-grid ; inline
 : new-empty-grid ( dim class -- grid )
   0 swap new-random-grid ; inline
+: <empty-grid> ( dim -- grid ) \ grid new-empty-grid ;
+: <random-grid> ( dim mines -- grid ) \ grid new-random-grid ;
