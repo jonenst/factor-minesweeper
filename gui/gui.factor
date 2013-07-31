@@ -7,6 +7,7 @@ minesweeper.gui.tabbed-field models models.arrow models.product
 sequences ui ui.gadgets ui.gadgets.buttons ui.gadgets.labeled
 ui.gadgets.labels ui.gadgets.packs minesweeper.engine.timed-grid 
 minesweeper.engine.finish ;
+FROM: sequences => product ;
 IN: minesweeper.gui
 
 TUPLE: minesweeper-gadget < pack current-grid ;
@@ -54,11 +55,11 @@ TUPLE: minesweeper-gadget < pack current-grid ;
   [ current-grid>> stop-callbacks ] tri  ;
 M: minesweeper-gadget ungraft* remove-game ;
 
-
-
+: validate-params ( models -- ? ) unclip-last [ product 1 - ] [ >= ] bi* ;
 : new-game ( toplevel params -- )
-  [ drop remove-game ] [ add-game ] 2bi ;
-
+  dup validate-params [
+    [ drop remove-game ] [ add-game ] 2bi
+  ] [ 2drop ] if ;
 
 : add-fields ( parent default-params -- parent models )
   { "rows" "cols" "mines" } swap [ <model> ] map [
