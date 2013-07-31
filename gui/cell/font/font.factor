@@ -14,14 +14,21 @@ IN: minesweeper.gui.font
   [ swap font-with-foreground ] bi* ;
 : marked-font ( font -- font )
   base-font COLOR: black font-with-foreground ;
+: false-positive-marked-font ( font -- font )
+  base-font COLOR: red font-with-foreground ;
+: correct-marked-font ( font -- font )
+  base-font COLOR: DarkGreen font-with-foreground ;
+
 : explosion-font ( font -- font )
   base-font COLOR: DarkRed font-with-foreground ;
 
-:: minesweeper-font ( cleared? marked? mined? n -- font )
+:: minesweeper-font ( cleared? marked? mined? n finished? -- font )
   sans-serif-font {
     { [ cleared? mined? and ] [ explosion-font ] }
     { [ cleared? mined? not and ] [ n swap cleared-font ] }
-    { [ marked? ] [ marked-font ] }
+    { [ marked? finished? not and ] [ marked-font ] }
+    { [ marked? mined? and ] [ correct-marked-font ] }
+    { [ marked? ] [ false-positive-marked-font ] }
     [ base-font ]
   } cond ;
 

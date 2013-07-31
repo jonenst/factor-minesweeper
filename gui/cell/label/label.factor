@@ -26,6 +26,6 @@ M: fancy-label-control model-changed
     [ grid>> finished?>> ]
   } cleave
   { [ [ minecell-label ] <smart-arrow> ]
-  [ drop [ minesweeper-font ] <smart-arrow> ] } 5 ncleave
+  [ [ minesweeper-font ] <smart-arrow> ] } 5 ncleave
   2array <product> <fancy-label-control> ;
 
