@@ -14,6 +14,7 @@ IN: minesweeper.gui.theme
 
 CONSTANT: BOOM "X"
 CONSTANT: MARK "!"
+CONSTANT: MISSED-MINE "@"
 
 CONSTANT: number-colors {
   COLOR: blue

@@ -15,16 +15,17 @@ M: fancy-label-control model-changed
 
 : neighbours-string ( n -- string )
    [ "" ] [ number>string ] if-zero ;
-:: minecell-label ( cleared? marked? mined? neighbours -- str )
+:: minecell-label ( cleared? marked? mined? neighbours finished? -- str )
   cleared? [ mined? BOOM neighbours neighbours-string ? ]
-  [ marked? MARK "" ? ] if ;
+  [ marked? MARK finished? mined? and "@" "" ? ? ] if ;
 : <neighbour-mines-model> ( minecell -- model )
   neighbour-cells [ mined?>> ] map <product> [ [ ] count ] <arrow> ;
 : <minecell-label> ( minecell -- label )
   { [ cleared?>> ] [ marked?>> ]
     [ mined?>> ] [ <neighbour-mines-model> ]
+    [ grid>> finished?>> ]
   } cleave
   { [ [ minecell-label ] <smart-arrow> ]
-  [ [ minesweeper-font ] <smart-arrow> ] } 4 ncleave
+  [ drop [ minesweeper-font ] <smart-arrow> ] } 5 ncleave
   2array <product> <fancy-label-control> ;
 
