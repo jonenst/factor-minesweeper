@@ -40,6 +40,10 @@ TUPLE: minecell-gadget < checkbox minecell toplevel ;
 : minecell-rightclicked ( gadget -- )
   dup button-rollover? [ (minecell-rightclicked) ] [ drop ] if ;
 
+: with-end-check ( gadget quot -- quot )
+  [ dup minecell>> grid>> finished?>> value>> not ] dip [ drop ] if ; inline
+M: minecell-gadget handle-gesture [ call-next-method ] with-end-check ;
+
 : <minecell-gadget> ( toplevel minecell -- gadget )
   [ ] [ cleared?>> ] [ <minecell-label> ] tri
   [ (minecell-leftclicked) ] minecell-gadget new-button
