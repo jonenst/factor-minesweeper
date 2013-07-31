@@ -12,9 +12,9 @@ FROM: models => change-model ;
 FROM: sequences => product ;
 IN: minesweeper.engine
 
+: marked-count ( cells -- n ) [ [ marked?>> value>> ] [ cleared?>> value>> not ] bi and ] count ;
 <PRIVATE
 : mines-count ( cells -- n ) [ mined?>> value>> ] count ;
-: marked-count ( cells -- n ) [ [ marked?>> value>> ] [ cleared?>> value>> not ] bi and ] count ;
 : neighbour-mines ( minecell -- n ) neighbour-cells mines-count ;
 
 DEFER: (demine-cell)

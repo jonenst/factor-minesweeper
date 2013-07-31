@@ -31,9 +31,16 @@ TUPLE: minesweeper-gadget < pack current-grid ;
   [ elapsed-time-str ] <arrow> <label-control> ;
 : <elapsed-time-control> ( grid -- control )
   duration>> elapsed-time-label ;
+: (<mark-control>) ( model cells total-mines -- label-control )
+  [ [ marked-count ] [ "marks: %d/%d" sprintf ] bi* nip ] 2curry
+  <arrow> <label-control> ;
+: <mark-control> ( grid -- control )
+  [ cells>> concat ] [ total-mines>> ] bi
+  [ drop [ marked?>> ] map <product> ]
+  [ (<mark-control>) ] 2bi ;
 : <info-control> ( grid -- control )
-  [ <status-control> ] [ <elapsed-time-control> ] bi
-  <pile> swap add-gadget swap add-gadget ;
+  [ <status-control> ] [ <elapsed-time-control> ] [ <mark-control> ] tri
+  <pile> swap add-gadget swap add-gadget swap add-gadget ;
 : add-info-control ( toplevel grid -- toplevel ) [ dup info-container ] [ <info-control> ] bi* add-gadget drop ;
 
 : add-minegrid ( toplevel grid -- toplevel ) [ drop dup minegrid-container ] [ <minegrid-gadget> ] 2bi add-gadget drop ;
