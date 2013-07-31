@@ -1,10 +1,10 @@
 ! Copyright (C) 2012 Jon Harper.
 ! See http://factorcode.org/license.txt for BSD license.
 USING: accessors arrays combinators generalizations kernel
-locals math math.parser minesweeper.engine.private
-minesweeper.gui.font minesweeper.gui.theme models
-models.arrow.smart models.product sequences ui.gadgets
-ui.gadgets.labels ;
+locals math math.parser minesweeper.engine.neighbours
+minesweeper.engine.private minesweeper.gui.font
+minesweeper.gui.theme models models.arrow models.arrow.smart
+models.product sequences ui.gadgets ui.gadgets.labels ;
 IN: minesweeper.gui.cell.label
 
 TUPLE: fancy-label-control < label ;
