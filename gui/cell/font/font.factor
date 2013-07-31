@@ -23,7 +23,7 @@ IN: minesweeper.gui.font
   base-font COLOR: DarkRed font-with-foreground ;
 
 :: minesweeper-font ( cleared? marked? mined? n finished? -- font )
-  sans-serif-font {
+  monospace-font {
     { [ cleared? mined? and ] [ explosion-font ] }
     { [ cleared? mined? not and ] [ n swap cleared-font ] }
     { [ marked? finished? not and ] [ marked-font ] }
