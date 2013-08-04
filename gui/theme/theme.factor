@@ -6,7 +6,7 @@ ui.gadgets.buttons ui.images ui.pens ui.pens.image ;
 IN: minesweeper.gui.theme
 
 : minesweeper-image-pen ( string -- path )
-  "vocab:minesweeper/" prepend-path ".png" append <image-name> <image-pen> ;
+  "vocab:minesweeper/gui/_resources" prepend-path ".png" append <image-name> <image-pen> ;
 : minecell-theme ( gadget -- gadget )
   "cell-plain" minesweeper-image-pen dup
   "cell-pressed" minesweeper-image-pen dup dup <button-pen> >>interior
