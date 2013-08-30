@@ -3,12 +3,12 @@
 USING: accessors arrays minesweeper.engine.types
 fry kernel minesweeper.engine.finish
 minesweeper.engine minesweeper.matrix-utils models models.arrow
-models.product random sequences ;
+models.product random sequences minesweeper.atomic-products ;
 IN: minesweeper.engine.grid
 
 <PRIVATE
 : <cells-model> ( cells -- model )
-  cells>> concat [ cleared?>> ] [ marked?>> ] [ map <product> ] bi-curry@ bi 2array <product> ;
+  cells>> concat [ cleared?>> ] [ marked?>> ] [ map <atomic-product> ] bi-curry@ bi 2array <atomic-product> ;
 
 : check-finished ( grid -- finished? )
   dup finished? [ >>won? drop ] dip ;

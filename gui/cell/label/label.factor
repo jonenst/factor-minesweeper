@@ -4,7 +4,7 @@ USING: accessors arrays combinators generalizations kernel
 locals math math.parser minesweeper.engine.neighbours
 minesweeper.engine.private minesweeper.gui.font
 minesweeper.gui.theme models models.arrow models.arrow.smart
-models.product sequences ui.gadgets ui.gadgets.labels ;
+models.product sequences ui.gadgets ui.gadgets.labels minesweeper.atomic-products ;
 IN: minesweeper.gui.cell.label
 
 TUPLE: fancy-label-control < label ;
@@ -19,7 +19,7 @@ M: fancy-label-control model-changed
   cleared? [ mined? BOOM neighbours neighbours-string ? ]
   [ marked? MARK finished? mined? and "@" "" ? ? ] if ;
 : <neighbour-mines-model> ( minecell -- model )
-  neighbour-cells [ mined?>> ] map <product> [ [ ] count ] <arrow> ;
+  neighbour-cells [ mined?>> ] map <atomic-product> [ [ ] count ] <arrow> ;
 : <minecell-label> ( minecell -- label )
   { [ cleared?>> ] [ marked?>> ]
     [ mined?>> ] [ <neighbour-mines-model> ]
@@ -27,5 +27,5 @@ M: fancy-label-control model-changed
   } cleave
   { [ [ minecell-label ] <smart-arrow> ]
   [ [ minesweeper-font ] <smart-arrow> ] } 5 ncleave
-  2array <product> <fancy-label-control> ;
+  2array <atomic-product> <fancy-label-control> ;
 

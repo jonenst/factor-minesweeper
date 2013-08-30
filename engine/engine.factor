@@ -7,7 +7,7 @@ math.order math.ranges math.vectors
 minesweeper.engine.neighbours
 minesweeper.engine.neighbours.private minesweeper.matrix-utils
 models models.arrow models.product random sequences
-sequences.extras sequences.product timers ;
+sequences.extras sequences.product timers formatting minesweeper.atomic-products ;
 FROM: models => change-model ;
 FROM: sequences => product ;
 IN: minesweeper.engine
@@ -66,7 +66,7 @@ PRIVATE>
 : ?init-mines ( minecell -- )
   dup grid>> started?>> value>> [ drop ] [ init-mines ] if ;
 PRIVATE>
-: demine-cell ( minecell -- ) [ ?init-mines ] [ demine-mark ] bi ;
+: demine-cell ( minecell -- ) [ [ ?init-mines ] [ demine-mark ] bi ] with-atomic-products ;
 
 <PRIVATE
 : toggle-model ( model -- ) [ not ] change-model ;

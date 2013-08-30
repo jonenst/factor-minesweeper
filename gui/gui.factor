@@ -6,7 +6,7 @@ minesweeper.engine minesweeper.gui.layout
 minesweeper.gui.tabbed-field models models.arrow models.product
 sequences ui ui.gadgets ui.gadgets.buttons ui.gadgets.labeled
 ui.gadgets.labels ui.gadgets.packs minesweeper.engine.timed-grid 
-minesweeper.engine.finish ;
+minesweeper.engine.finish minesweeper.atomic-products ;
 FROM: sequences => product ;
 IN: minesweeper.gui
 
@@ -23,7 +23,7 @@ TUPLE: minesweeper-gadget < pack current-grid ;
 
 : status-str ( won? started? finished? -- str ) [ drop "Victory !" "BOOOOOM" ? ] [ nip "Playing" "Ready..." ? ] if ;
 : <status-control> ( grid -- control )
-  dup [ started?>> ] [ finished?>> ] bi 2array <product>
+  dup [ started?>> ] [ finished?>> ] bi 2array <atomic-product>
   [ [ won?>> ] [ first2 status-str ] bi* ] with <arrow> <label-control> ;
 
 : elapsed-time-str ( seconds -- str )
@@ -37,7 +37,7 @@ TUPLE: minesweeper-gadget < pack current-grid ;
   <arrow> <label-control> ;
 : <mark-control> ( grid -- control )
   [ cells>> concat ] [ total-mines>> ] bi
-  [ drop [ marked?>> ] map <product> ]
+  [ drop [ marked?>> ] map <atomic-product> ]
   [ (<mark-control>) ] 2bi ;
 : <info-control> ( grid -- control )
   [ <status-control> ] [ <elapsed-time-control> ] [ <mark-control> ] tri
