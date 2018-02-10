@@ -63,7 +63,7 @@ M: minesweeper-gadget ungraft* remove-game ;
 
 : add-fields ( parent default-params -- parent models )
   { "rows" "cols" "mines" } swap [ <model> ] map [
-    [ <tabbed-model-field> swap <labeled-gadget> ] 2map add-gadgets
+    [ <tabbed-model-field> swap COLOR: black <labeled-gadget> ] 2map add-gadgets
     dup link-all-tabbed-gadgets
   ] keep ;
 
